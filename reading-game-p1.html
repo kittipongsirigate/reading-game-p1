@@ -539,4 +539,88 @@ function renderBoard(myEntry){
   const tbody = $("boardBody");
   tbody.innerHTML = "";
   if (scores.length === 0){
-    tbody.innerHTML = "<tr><td colspan='3
+    tbody.innerHTML = "<tr><td colspan='3'>ยังไม่มีคะแนน</td></tr>";
+    return;
+  }
+  scores.forEach((s,i)=>{
+    const tr = document.createElement("tr");
+    if (i===0) tr.className = "rank1";
+    if (myEntry && s.ts === myEntry.ts && s.name === myEntry.name) tr.classList.add("me");
+    const medal = ["🥇","🥈","🥉"][i] || (i+1);
+    tr.innerHTML = `<td>${medal}</td><td>${escapeHtml(s.name)}</td><td>⭐ ${s.score}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function escapeHtml(s){ const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// ================== เอฟเฟกต์ ==================
+function flyStar(){
+  for (let i=0;i<3;i++){
+    const s = document.createElement("div");
+    s.className = "fly-star"; s.textContent = "⭐";
+    s.style.left = (35 + Math.random()*30) + "%";
+    s.style.top  = "50%";
+    s.style.animationDelay = (i*0.12)+"s";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(), 1400);
+  }
+}
+
+function playTone(good){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const notes = good ? [523,659,784] : [330,262];
+    notes.forEach((f,i)=>{
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = f; o.type = "sine";
+      const t = audioCtx.currentTime + i*0.12;
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+      o.start(t); o.stop(t+0.3);
+    });
+  }catch(e){}
+}
+
+// ================== จบเกม ==================
+function endGame(){
+  $("progressFill").style.width = "100%";
+  $("finalStars").textContent = `${playerName} ได้ ⭐ ${stars} จาก ${order.length} ดวง`;
+  const entry = saveScore(playerName, stars);
+  renderBoard(entry);
+  showScreen("endScreen");
+  speak(stars >= order.length*0.7 ? "เก่งมากๆเลย" : "เก่งมาก ครั้งหน้าลองใหม่นะ");
+}
+
+// ================== Events ==================
+$("startBtn").onclick = async () => {
+  const name = $("nameInput").value.trim();
+  if (!name){
+    $("nameInput").placeholder = "ใส่ชื่อก่อนนะ 😊";
+    $("nameInput").focus();
+    return;
+  }
+  playerName = name;
+  playTone(true);           // ปลดล็อกเสียงบน iOS
+  speechSynthesis.cancel(); // ปลดล็อก TTS
+  if (hasSR) ensureMic();   // ขอสิทธิ์ไมค์ตั้งแต่ตอนเริ่ม จะได้ไม่มี popup ตัดจังหวะตอนพูด
+  else showManual();
+  startGame();
+};
+$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("startBtn").click(); });
+$("listenBtn").onclick = () => speak(order[idx].w);
+$("micBtn").onclick    = onMicPress;
+$("skipBtn").onclick   = () => { idx++; loadWord(); };
+$("micSelect").onchange = e => switchMicDevice(e.target.value);
+$("manualOk").onclick  = correct;
+$("manualNo").onclick  = () => wrong("");
+$("againBtn").onclick  = () => {
+  $("nameInput").value = "";
+  showScreen("nameScreen");
+  $("nameInput").focus();
+};
+
+if (!hasSR){ $("warnBox").style.display = "block"; }
+</script>
+</body>
+</html>

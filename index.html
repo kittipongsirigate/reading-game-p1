@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ศูนย์รวมเกมการเรียนรู้ 🎮</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family:'Sarabun','Prompt','Segoe UI',Tahoma,sans-serif;
+    background: linear-gradient(160deg,#a8e6ff 0%,#d8f7c9 50%,#fff3b0 100%);
+    min-height:100%;
+    display:flex; flex-direction:column; align-items:center;
+    padding:28px 20px 60px;
+  }
+
+  header { text-align:center; margin-bottom:30px; }
+  .mascot { font-size:clamp(60px,12vw,90px); animation:bounce 1.8s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+  h1 { font-size:clamp(28px,6vw,44px); color:#2d6a4f; text-shadow:2px 2px 0 #fff; margin-top:6px; }
+  .subtitle { font-size:clamp(16px,3.6vw,22px); color:#40513b; margin-top:8px; }
+
+  .grade-section { width:100%; max-width:1000px; margin-bottom:30px; }
+  .grade-title {
+    font-size:clamp(20px,4.5vw,26px); font-weight:bold; color:#7c2d12;
+    margin:0 6px 14px; display:flex; align-items:center; gap:10px;
+  }
+  .grade-badge {
+    background:#fff; border-radius:16px; padding:4px 14px;
+    box-shadow:0 3px 8px rgba(0,0,0,.12); font-size:clamp(16px,4vw,20px);
+  }
+
+  .game-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:20px;
+  }
+
+  .game-card {
+    background:#fff; border-radius:32px; padding:26px 20px;
+    box-shadow:0 8px 20px rgba(0,0,0,.15);
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    text-decoration:none; color:inherit;
+    cursor:pointer; border:none; font-family:inherit;
+    transition:transform .12s, box-shadow .12s;
+    min-height:220px;
+    touch-action:manipulation;
+  }
+  .game-card:active { transform:translateY(4px) scale(.98); box-shadow:0 3px 10px rgba(0,0,0,.15); }
+
+  .game-icon { font-size:clamp(52px,12vw,72px); margin-bottom:10px; }
+  .game-title { font-size:clamp(19px,4.5vw,24px); font-weight:bold; color:#1e293b; margin-bottom:6px; }
+  .game-desc { font-size:clamp(13px,3.2vw,16px); color:#64748b; line-height:1.5; margin-bottom:16px; flex-grow:1; }
+  .play-pill {
+    background:linear-gradient(180deg,#ffd93d,#ff9f1c); color:#7a3b00;
+    font-weight:bold; font-size:clamp(15px,3.6vw,19px);
+    padding:10px 28px; border-radius:24px;
+    box-shadow:0 4px 0 rgba(0,0,0,.15);
+  }
+
+  .game-card.soon { opacity:.55; cursor:default; }
+  .game-card.soon .play-pill { background:#e2e8f0; color:#94a3b8; box-shadow:none; }
+  .game-card.soon:active { transform:none; box-shadow:0 8px 20px rgba(0,0,0,.15); }
+
+  footer { margin-top:10px; font-size:clamp(12px,3vw,14px); color:#64748b; text-align:center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mascot">🦉</div>
+  <h1>เกมการเรียนรู้</h1>
+  <p class="subtitle">เลือกเกมที่อยากเล่นได้เลย ⭐</p>
+</header>
+
+<div id="gameSections"></div>
+
+<footer>ทำการบ้าน อ่านหนังสือ แล้วค่อยมาเล่นนะ 😊</footer>
+
+<script>
+// ============================================================
+// รายชื่อเกมทั้งหมด — เพิ่มเกมใหม่ในอนาคตแค่เพิ่ม object ในนี้
+// grade  : ชั้นเรียน เช่น "ป.1"
+// title  : ชื่อเกม
+// desc   : คำอธิบายสั้นๆ
+// icon   : อีโมจิไอคอนเกม
+// file   : ไฟล์ .html ของเกม (เว้นว่างหรือใส่ ready:false ถ้ายังไม่พร้อม)
+// ready  : true = เล่นได้แล้ว, false = เร็วๆนี้
+// ============================================================
+const GAMES = [
+  {
+    grade: "ป.1",
+    title: "เกมอ่านออกเสียง",
+    desc: "คำ 2 พยางค์ อ่านให้ถูก รับดาวสะสม",
+    icon: "🦉",
+    file: "reading-game-p1.html",
+    ready: true
+  },
+  {
+    grade: "ป.2",
+    title: "เร็วๆ นี้",
+    desc: "กำลังเตรียมเกมสนุกๆ สำหรับ ป.2",
+    icon: "🐣",
+    file: "",
+    ready: false
+  },
+  {
+    grade: "ป.3",
+    title: "เร็วๆ นี้",
+    desc: "กำลังเตรียมเกมสนุกๆ สำหรับ ป.3",
+    icon: "🐥",
+    file: "",
+    ready: false
+  }
+];
+
+function render(){
+  // จัดกลุ่มตามชั้นเรียน
+  const grades = [...new Set(GAMES.map(g => g.grade))];
+  const container = document.getElementById("gameSections");
+  container.innerHTML = "";
+
+  grades.forEach(grade => {
+    const section = document.createElement("div");
+    section.className = "grade-section";
+
+    const gradeTitle = document.createElement("div");
+    gradeTitle.className = "grade-title";
+    gradeTitle.innerHTML = `<span class="grade-badge">${grade}</span>`;
+    section.appendChild(gradeTitle);
+
+    const grid = document.createElement("div");
+    grid.className = "game-grid";
+
+    GAMES.filter(g => g.grade === grade).forEach(g => {
+      const card = document.createElement(g.ready ? "a" : "div");
+      card.className = "game-card" + (g.ready ? "" : " soon");
+      if (g.ready) card.href = g.file;
+      card.innerHTML = `
+        <div class="game-icon">${g.icon}</div>
+        <div class="game-title">${g.title}</div>
+        <div class="game-desc">${g.desc}</div>
+        <div class="play-pill">${g.ready ? "▶ เล่นเลย" : "🔒 เร็วๆ นี้"}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+render();
+</script>
+</body>
+</html>
