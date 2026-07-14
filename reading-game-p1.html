@@ -282,27 +282,27 @@ const WORD_SETS = [
     { w:"ปลาดาว",   alt:["ปลาดาว์"] },
   ],
   [ // ชุดที่ 4
-    { w:"เต่าบก",   alt:["เต่าบก์"] },
+    { w:"เต่าทอง",  alt:["เต่าทอง์"] },
     { w:"นกแก้ว",   alt:["นกแกว"] },
-    { w:"ผึ้งน้อย", alt:["พึ่งน้อย"] },
+    { w:"นกฮูก",    alt:["นกฮุก"] },
     { w:"มดแดง",    alt:["มดแดง์"] },
     { w:"งูเห่า",   alt:["งูเหา"] },
     { w:"เสือดาว",  alt:["เสือดาว์"] },
     { w:"ม้าลาย",   alt:["มาลาย"] },
     { w:"ยีราฟ",    alt:["ยีราบ"] },
     { w:"สิงโต",    alt:["สิงโตะ"] },
-    { w:"กวางป่า",  alt:["กวางปา"] },
+    { w:"ปลาวาฬ",   alt:["ปลาวาน"] },
   ],
   [ // ชุดที่ 5
     { w:"ลูกโป่ง",  alt:["ลูกโปง"] },
     { w:"ปลาไหล",  alt:["ปลาไหล่"] },
     { w:"ปลาหมึก", alt:["ปลาหมึก์"] },
-    { w:"ไก่ชน",    alt:["ไก่ชล"] },
+    { w:"ลูกช้าง",  alt:["ลูกชาง"] },
     { w:"หมูป่า",   alt:["หมูปา"] },
     { w:"แมวน้ำ",   alt:["แมวนำ"] },
     { w:"หมาป่า",   alt:["หมาปา"] },
     { w:"นกยูง",    alt:["นกยุง"] },
-    { w:"เป็ดน้อย", alt:["เป็ดนอย"] },
+    { w:"เป็ดยาง",  alt:["เป็ดยาง์"] },
     { w:"ปลากัด",   alt:["ปลากัต"] },
   ],
   [ // ชุดที่ 6
@@ -311,10 +311,10 @@ const WORD_SETS = [
     { w:"แมงมุม",   alt:["แมงมุม์"] },
     { w:"หิ่งห้อย", alt:["หิ่งห้อย์"] },
     { w:"จิ้งจก",   alt:["จิ้งจก์"] },
-    { w:"ตั๊กแตน",  alt:["ตั๊กแตน์"] },
+    { w:"ไส้เดือน",  alt:["ไส้เดือน์"] },
     { w:"ใบไม้",    alt:["ใบไม"] },
     { w:"กิ่งไม้",  alt:["กิ่งไม"] },
-    { w:"ข้าวสาร",  alt:["ข้าวสาน"] },
+    { w:"ข้าวโพด",  alt:["ข้าวโพต"] },
     { w:"ข้าวเหนียว",alt:["ข้าวเหนียว์"] },
   ],
   [ // ชุดที่ 7
@@ -354,7 +354,7 @@ const WORD_SETS = [
     { w:"เครื่องบิน",alt:["เครื่องบิน์"] },
   ],
   [ // ชุดที่ 10
-    { w:"ว่าวจีน",  alt:["ว่าวจีน์"] },
+    { w:"กระดิ่ง",  alt:["กระดิง"] },
     { w:"ลูกข่าง",  alt:["ลูกขาง"] },
     { w:"ลูกบอล",   alt:["ลูกบอล์"] },
     { w:"ฝนตก",     alt:["ฝนตก์"] },
@@ -362,7 +362,7 @@ const WORD_SETS = [
     { w:"ฟ้าร้อง",  alt:["ฟ้าร้อง์"] },
     { w:"สายรุ้ง",  alt:["สายรุ้ง์"] },
     { w:"ดาวตก",    alt:["ดาวตก์"] },
-    { w:"พระจันทร์",alt:["พระจัน"] },
+    { w:"ดวงจันทร์",alt:["ดวงจัน"] },
     { w:"ดวงดาว",   alt:["ดวงดาว์"] },
   ],
 ];
@@ -390,6 +390,10 @@ let micReady = false;
 const $ = id => document.getElementById(id);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const hasSR = !!SR;
+// Android Chrome: ถ้ามีสตรีมไมค์ (getUserMedia) ค้างไว้พร้อมกับ SpeechRecognition กำลังทำงาน
+// ระบบเสียงของ Android จะแย่งกันจนตัวจับคำพูดไม่ได้ยินอะไรเลย (แม้หลอดระดับเสียงจะขึ้นก็ตาม)
+// iOS ไม่มีปัญหานี้ จึงจำกัดการแก้เฉพาะ Android เท่านั้น
+const isAndroid = /Android/i.test(navigator.userAgent);
 
 // ================== เสียงพูดตัวอย่าง (TTS) ==================
 function speak(text, cb){
@@ -496,6 +500,22 @@ async function switchMicDevice(deviceId){
 }
 if (navigator.mediaDevices && navigator.mediaDevices.addEventListener){
   navigator.mediaDevices.addEventListener("devicechange", () => { if (micReady) populateMicSelect(); });
+}
+
+// ปล่อยสตรีมไมค์ของหลอดระดับเสียงทิ้งชั่วคราว (เฉพาะ Android) ก่อนเริ่ม SpeechRecognition
+// เพื่อไม่ให้แย่งไมค์กัน แล้วค่อยขอกลับคืนมาหลังฟังจบ
+function releaseMicMonitor(){
+  if (micRafId){ cancelAnimationFrame(micRafId); micRafId = null; }
+  analyser = null;
+  if (micStream){
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+  micReady = false;
+  const dot = $("micDot");
+  if (dot) dot.classList.remove("on");
+  const fill = $("micLevelFill");
+  if (fill) fill.style.width = "0%";
 }
 
 function startVisualizer(){
@@ -607,6 +627,8 @@ async function onMicPress(){
 
 function startListening(){
   if (!hasSR || recognizing) return;
+  // Android: ปล่อยไมค์ของหลอดระดับเสียงก่อน ไม่งั้น SpeechRecognition จะไม่ได้ยินเสียงเลย
+  if (isAndroid) releaseMicMonitor();
   recognition = new SR();
   recognition.lang = "th-TH";
   recognition.interimResults = true;   // ให้แสดงข้อความที่ตรวจจับได้แบบสดๆ ระหว่างพูด
@@ -660,6 +682,8 @@ function startListening(){
     $("micBtn").classList.remove("listening");
     $("micBtn").textContent = "🎤 พูดเลย!";
     if (!gotResult) setFeedback("ไม่ได้ยินเสียง ลองใหม่นะ 🙉", "bad");
+    // Android: ฟังจบแล้ว ขอไมค์คืนมาให้หลอดระดับเสียงทำงานต่อ
+    if (isAndroid) ensureMic();
   };
   try { recognition.start(); }
   catch(e){ recognizing = false; }
