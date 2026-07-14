@@ -123,12 +123,6 @@
   }
   .mic-dot { width:9px; height:9px; border-radius:50%; background:#cbd5e1; flex:none; }
   .mic-dot.on { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.25); }
-  .mic-select {
-    margin-top:8px; width:100%; font-size:clamp(12px,3.2vw,14px);
-    padding:8px 10px; border-radius:12px; border:1px solid #cbd5e1;
-    background:#fff; color:#334155; font-family:inherit;
-  }
-  .mic-hint { font-size:clamp(11px,3vw,13px); color:#94a3b8; margin-top:4px; line-height:1.5; }
 
   .feedback {
     min-height:64px; margin-top:14px; font-size:clamp(20px,5vw,26px);
@@ -219,8 +213,6 @@
   <div class="mic-info" id="micInfo">
     <div class="mic-level-box"><div class="mic-level-fill" id="micLevelFill"></div></div>
     <div class="mic-device" id="micDeviceText"><span class="mic-dot" id="micDot"></span><span id="micDeviceLabel">ยังไม่ได้เปิดไมค์</span></div>
-    <select class="mic-select" id="micSelect"><option>กำลังค้นหาไมค์...</option></select>
-    <div class="mic-hint" id="micHint"></div>
   </div>
 
   <button class="big-btn" id="skipBtn">ข้ามคำนี้ ⏭</button>
@@ -447,7 +439,6 @@ function setupMicMonitor(stream){
     micDataArray = new Uint8Array(analyser.fftSize);
     $("micDot").classList.add("on");
     startVisualizer();
-    populateMicSelect();
   } catch(e){}
 }
 
@@ -464,47 +455,9 @@ async function updateDeviceLabel(track){
   $("micDeviceLabel").textContent = label || "ไมโครโฟนพร้อมใช้งาน";
 }
 
-// ---------- เลือกเปลี่ยนอุปกรณ์ไมค์ ----------
-async function populateMicSelect(){
-  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
-  try{
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const mics = devices.filter(d => d.kind === "audioinput");
-    const sel = $("micSelect");
-    const currentId = micStream && micStream.getAudioTracks()[0].getSettings().deviceId;
-    sel.innerHTML = "";
-    mics.forEach((d,i) => {
-      const opt = document.createElement("option");
-      opt.value = d.deviceId;
-      opt.textContent = d.label || ("ไมโครโฟน " + (i+1));
-      if (d.deviceId === currentId) opt.selected = true;
-      sel.appendChild(opt);
-    });
-    if (mics.length === 0){
-      sel.innerHTML = "<option>ไม่พบไมโครโฟน</option>";
-    }
-    $("micHint").textContent = "หมายเหตุ: แถบระดับเสียงจะใช้ไมค์ที่เลือกนี้ แต่การจับคำพูดจริงยังใช้ไมค์เริ่มต้นของเบราว์เซอร์/ระบบ ถ้าไม่ตรงกัน ให้ตั้งไมค์นี้เป็นค่าเริ่มต้นในระบบด้วย";
-  }catch(e){}
-}
-
-async function switchMicDevice(deviceId){
-  try{
-    if (micStream) micStream.getTracks().forEach(t => t.stop());
-    if (micRafId){ cancelAnimationFrame(micRafId); micRafId = null; }
-    analyser = null;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio:{ deviceId:{ exact: deviceId } } });
-    micStream = stream;
-    setupMicMonitor(stream);
-  }catch(e){
-    $("micHint").textContent = "สลับไมค์ไม่สำเร็จ ลองใหม่อีกครั้ง";
-  }
-}
-if (navigator.mediaDevices && navigator.mediaDevices.addEventListener){
-  navigator.mediaDevices.addEventListener("devicechange", () => { if (micReady) populateMicSelect(); });
-}
-
-// ปล่อยสตรีมไมค์ของหลอดระดับเสียงทิ้งชั่วคราว (เฉพาะ Android) ก่อนเริ่ม SpeechRecognition
-// เพื่อไม่ให้แย่งไมค์กัน แล้วค่อยขอกลับคืนมาหลังฟังจบ
+// ปล่อยสตรีมไมค์ของหลอดระดับเสียงทิ้งชั่วคราว (เฉพาะ Chrome) ก่อนเริ่ม SpeechRecognition
+// เพื่อไม่ให้แย่งไมค์กัน แล้วค่อยขอกลับคืนมาหลังฟังจบ — ใช้ไมค์เริ่มต้นที่ browser อนุญาตเสมอ ไม่มีการเลือกอุปกรณ์เอง
+// (การเลือกไมค์เฉพาะเจาะจงเคยทำให้ SpeechRecognition ของ Chrome จับเสียงไม่ได้อีกเลยหลังสลับไมค์ จึงตัดฟีเจอร์นี้ออก)
 function releaseMicMonitor(){
   if (micRafId){ cancelAnimationFrame(micRafId); micRafId = null; }
   analyser = null;
@@ -515,8 +468,28 @@ function releaseMicMonitor(){
   micReady = false;
   const dot = $("micDot");
   if (dot) dot.classList.remove("on");
+}
+
+// ---------- แถบระดับเสียงจำลอง ระหว่างที่ Chrome กำลังฟัง (ของจริงถูกปล่อยไปแล้วกันไมค์ชนกัน) ----------
+// ทำให้หลอด progress ยังดูมีชีวิต/active ตลอดเวลา แม้ระหว่างพูดจริงๆ Chrome จะไม่ให้เข้าถึงสตรีมไมค์ก็ตาม
+let fakePulseRAF = null;
+function startFakePulse(){
+  stopFakePulse();
   const fill = $("micLevelFill");
-  if (fill) fill.style.width = "0%";
+  if (!fill) return;
+  const dot = $("micDot");
+  if (dot) dot.classList.add("on");
+  const start = Date.now();
+  function tick(){
+    const t = (Date.now() - start) / 1000;
+    const pct = 30 + Math.sin(t*6)*22 + Math.sin(t*13.7)*10;
+    fill.style.width = Math.max(6, Math.min(92, pct)) + "%";
+    fakePulseRAF = requestAnimationFrame(tick);
+  }
+  fakePulseRAF = requestAnimationFrame(tick);
+}
+function stopFakePulse(){
+  if (fakePulseRAF){ cancelAnimationFrame(fakePulseRAF); fakePulseRAF = null; }
 }
 
 function startVisualizer(){
@@ -623,26 +596,29 @@ async function onMicPress(){
     showManual();
     return;
   }
-  startListening();
+  startListening(0);
 }
 
-function startListening(){
+const MAX_AUTO_RETRY = 2; // ตรวจไม่พบเสียงกี่ครั้ง ระบบจะลองฟังใหม่เองก่อนให้เด็กกดปุ่มเอง
+
+function startListening(retryCount){
+  retryCount = retryCount || 0;
   if (!hasSR || recognizing) return;
   // Chrome: ปล่อยไมค์ของหลอดระดับเสียงก่อน ไม่งั้น SpeechRecognition จะไม่ได้ยินเสียงเลย
-  if (isChrome) releaseMicMonitor();
+  // แล้วใช้แถบสั่นจำลองแทนระหว่างฟัง เพื่อให้หลอด progress ยัง active ตลอด
+  if (isChrome){ releaseMicMonitor(); startFakePulse(); }
   recognition = new SR();
   recognition.lang = "th-TH";
   recognition.interimResults = true;   // ให้แสดงข้อความที่ตรวจจับได้แบบสดๆ ระหว่างพูด
   recognition.continuous = true;       // ฟังต่อเนื่องหลายครั้งในเซสชันเดียว (ตอบผิดแล้วพูดใหม่ได้ทันทีโดยไม่ต้องกดปุ่ม)
   recognition.maxAlternatives = 5;
   recognizing = true;
-  const startedAt = Date.now();
   $("micBtn").classList.add("listening");
   $("micBtn").textContent = "🎤 กำลังฟัง...";
   setFeedback("พูดเลย! 🗣️", "info");
   $("heardText").textContent = "";
 
-  let gotResult = false, restarted = false;
+  let gotResult = false;
   recognition.onresult = ev => {
     let finalRes = null, interimText = "";
     for (let i = ev.resultIndex; i < ev.results.length; i++){
@@ -660,34 +636,31 @@ function startListening(){
     }
   };
   recognition.onerror = ev => {
-    gotResult = true;
     if (ev.error === "not-allowed" || ev.error === "service-not-allowed"){
+      gotResult = true; // ต้องรอเด็กอนุญาตไมค์ก่อน ไม่ลองใหม่เอง
       setFeedback("กรุณาอนุญาตใช้ไมโครโฟน 🎤", "info");
       showManual();
-    } else if (ev.error === "no-speech"){
-      setFeedback("ไม่ได้ยินเสียงเลย ลองใหม่นะ 🙉", "bad");
-    } else if (ev.error === "aborted"){
-      gotResult = false; // ให้ onend ลองเริ่มใหม่
+    } else if (ev.error === "no-speech" || ev.error === "aborted"){
+      // ปล่อยให้ onend ตัดสินใจลองฟังใหม่เองอัตโนมัติ (ระบบพยายามแก้ปัญหาเอง)
     } else {
+      gotResult = true;
       setFeedback("ลองกดปุ่มไมค์อีกครั้งนะ", "info");
     }
   };
   recognition.onend = () => {
     recognizing = false;
-    // ถ้าโดนตัดจบเร็วผิดปกติ (เช่น popup ขอสิทธิ์เพิ่งปิด) ให้เริ่มฟังใหม่เองอัตโนมัติ 1 ครั้ง
-    if (!gotResult && !restarted && Date.now() - startedAt < 1500){
-      restarted = true;
-      setTimeout(startListening, 300);
+    // ตรวจไม่พบเสียงเลย: รีเซ็ตสถานะไมค์แล้วลองฟังใหม่เองอัตโนมัติ ก่อนบอกให้เด็กกดปุ่มเอง
+    if (!gotResult && retryCount < MAX_AUTO_RETRY){
+      setTimeout(()=> startListening(retryCount+1), 350);
       return;
     }
+    if (isChrome){ stopFakePulse(); ensureMic(); } // ฟังจบแล้ว ขอไมค์คืนมาให้หลอดระดับเสียงจริงทำงานต่อ
     $("micBtn").classList.remove("listening");
     $("micBtn").textContent = "🎤 พูดเลย!";
-    if (!gotResult) setFeedback("ไม่ได้ยินเสียง ลองใหม่นะ 🙉", "bad");
-    // Chrome: ฟังจบแล้ว ขอไมค์คืนมาให้หลอดระดับเสียงทำงานต่อ
-    if (isChrome) ensureMic();
+    if (!gotResult) setFeedback("ไม่ได้ยินเสียง ลองกดปุ่มไมค์อีกครั้งนะ 🙉", "bad");
   };
   try { recognition.start(); }
-  catch(e){ recognizing = false; }
+  catch(e){ recognizing = false; if (isChrome) stopFakePulse(); }
 }
 
 function showManual(){
@@ -785,7 +758,6 @@ $("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("star
 $("listenBtn").onclick = () => speak(order[idx].w);
 $("micBtn").onclick    = onMicPress;
 $("skipBtn").onclick   = () => { idx++; loadWord(); };
-$("micSelect").onchange = e => switchMicDevice(e.target.value);
 $("manualOk").onclick  = correct;
 $("manualNo").onclick  = () => wrong("");
 $("againBtn").onclick  = () => {
