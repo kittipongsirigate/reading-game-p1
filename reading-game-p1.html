@@ -390,10 +390,11 @@ let micReady = false;
 const $ = id => document.getElementById(id);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const hasSR = !!SR;
-// Android Chrome: ถ้ามีสตรีมไมค์ (getUserMedia) ค้างไว้พร้อมกับ SpeechRecognition กำลังทำงาน
-// ระบบเสียงของ Android จะแย่งกันจนตัวจับคำพูดไม่ได้ยินอะไรเลย (แม้หลอดระดับเสียงจะขึ้นก็ตาม)
-// iOS ไม่มีปัญหานี้ จึงจำกัดการแก้เฉพาะ Android เท่านั้น
-const isAndroid = /Android/i.test(navigator.userAgent);
+// Chrome (ทั้งบนมือถือและพีซี): ถ้ามีสตรีมไมค์ (getUserMedia) ค้างไว้พร้อมกับ SpeechRecognition กำลังทำงาน
+// เอนจิน speech ของ Chrome จะแย่งไมค์กันเองจนจับคำพูดไม่ได้เลย (แม้หลอดระดับเสียงจะขึ้นก็ตาม)
+// ทดสอบแล้วพบว่าเกิดเฉพาะ Chrome เท่านั้น — Edge (เอนจิน speech คนละตัว) และ iOS Safari ไม่มีปัญหานี้
+const ua = navigator.userAgent;
+const isChrome = /Chrome/.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
 
 // ================== เสียงพูดตัวอย่าง (TTS) ==================
 function speak(text, cb){
@@ -627,8 +628,8 @@ async function onMicPress(){
 
 function startListening(){
   if (!hasSR || recognizing) return;
-  // Android: ปล่อยไมค์ของหลอดระดับเสียงก่อน ไม่งั้น SpeechRecognition จะไม่ได้ยินเสียงเลย
-  if (isAndroid) releaseMicMonitor();
+  // Chrome: ปล่อยไมค์ของหลอดระดับเสียงก่อน ไม่งั้น SpeechRecognition จะไม่ได้ยินเสียงเลย
+  if (isChrome) releaseMicMonitor();
   recognition = new SR();
   recognition.lang = "th-TH";
   recognition.interimResults = true;   // ให้แสดงข้อความที่ตรวจจับได้แบบสดๆ ระหว่างพูด
@@ -682,8 +683,8 @@ function startListening(){
     $("micBtn").classList.remove("listening");
     $("micBtn").textContent = "🎤 พูดเลย!";
     if (!gotResult) setFeedback("ไม่ได้ยินเสียง ลองใหม่นะ 🙉", "bad");
-    // Android: ฟังจบแล้ว ขอไมค์คืนมาให้หลอดระดับเสียงทำงานต่อ
-    if (isAndroid) ensureMic();
+    // Chrome: ฟังจบแล้ว ขอไมค์คืนมาให้หลอดระดับเสียงทำงานต่อ
+    if (isChrome) ensureMic();
   };
   try { recognition.start(); }
   catch(e){ recognizing = false; }
