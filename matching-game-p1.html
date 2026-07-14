@@ -105,7 +105,7 @@
     position:relative;
     min-height:104px;
   }
-  .pic-card svg { width:58px; height:58px; }
+  .pic-card img { width:72px; height:72px; object-fit:contain; -webkit-user-drag:none; pointer-events:none; }
 
   .answer-list {
     display:flex; flex-direction:column; gap:10px;
@@ -230,30 +230,11 @@
 </div>
 
 <script>
-// ================== ไอคอนลายเส้น (SVG) — ทำเองไว้ก่อน เดี๋ยวค่อยเปลี่ยนเป็นรูปจริง ==================
-const ICONS = {
-  dokmai: `<circle cx="60" cy="30" r="14"/><circle cx="60" cy="58" r="14"/><circle cx="36" cy="44" r="14"/><circle cx="84" cy="44" r="14"/><circle cx="60" cy="44" r="10"/><line x1="60" y1="72" x2="60" y2="105"/><path d="M60 90 Q45 88 40 100"/><path d="M60 95 Q75 93 80 105"/>`,
-  mamuang: `<path d="M40 35 C20 55 25 90 55 100 C85 108 100 80 90 55 C82 35 60 20 40 35 Z"/><line x1="55" y1="30" x2="62" y2="18"/><path d="M62 18 Q75 15 78 25"/>`,
-  peesuea: `<line x1="60" y1="30" x2="60" y2="95"/><path d="M60 40 C30 10 5 30 15 55 C22 72 45 65 60 50"/><path d="M60 55 C35 60 20 85 35 100 C48 112 60 90 60 75"/><path d="M60 40 C90 10 115 30 105 55 C98 72 75 65 60 50"/><path d="M60 55 C85 60 100 85 85 100 C72 112 60 90 60 75"/><line x1="60" y1="30" x2="50" y2="18"/><line x1="60" y1="30" x2="70" y2="18"/>`,
-  krapao: `<rect x="25" y="35" width="70" height="75" rx="16"/><rect x="42" y="55" width="36" height="30" rx="8"/><path d="M40 35 C40 15 80 15 80 35"/><line x1="60" y1="35" x2="60" y2="55"/>`,
-  rongtao: `<path d="M15 85 C15 65 30 55 45 55 C55 55 55 45 68 45 C85 45 105 55 105 75 C105 88 95 92 80 92 L20 92 C15 92 15 88 15 85 Z"/><line x1="45" y1="55" x2="45" y2="92"/><line x1="55" y1="60" x2="65" y2="70"/><line x1="55" y1="70" x2="65" y2="80"/>`,
-  waenta: `<circle cx="35" cy="60" r="22"/><circle cx="85" cy="60" r="22"/><line x1="57" y1="55" x2="63" y2="55"/><line x1="13" y1="55" x2="2" y2="48"/><line x1="107" y1="55" x2="118" y2="48"/>`,
-  lookmaew: `<circle cx="60" cy="65" r="35"/><path d="M30 40 L20 15 L45 30 Z"/><path d="M90 40 L100 15 L75 30 Z"/><path d="M50 68 L45 75 L55 75 Z" fill="#1e293b"/><line x1="20" y1="65" x2="42" y2="68"/><line x1="20" y1="75" x2="42" y2="73"/><line x1="100" y1="65" x2="78" y2="68"/><line x1="100" y1="75" x2="78" y2="73"/><circle cx="47" cy="58" r="4" fill="#1e293b" stroke="none"/><circle cx="73" cy="58" r="4" fill="#1e293b" stroke="none"/>`,
-  taobok: `<ellipse cx="60" cy="65" rx="42" ry="32"/><path d="M60 33 L60 97 M25 50 L95 50 M25 80 L95 80 M40 40 L40 90 M80 40 L80 90"/><circle cx="100" cy="55" r="12"/><ellipse cx="25" cy="95" rx="8" ry="6"/><ellipse cx="95" cy="95" rx="8" ry="6"/><line x1="15" y1="65" x2="2" y2="70"/><circle cx="104" cy="52" r="2.5" fill="#1e293b" stroke="none"/>`,
-  tonmai: `<rect x="52" y="75" width="16" height="35" rx="4"/><circle cx="60" cy="45" r="30"/><circle cx="35" cy="60" r="20"/><circle cx="85" cy="60" r="20"/>`,
-  nangsue: `<path d="M60 30 C45 20 25 20 15 28 L15 90 C25 82 45 82 60 92 Z"/><path d="M60 30 C75 20 95 20 105 28 L105 90 C95 82 75 82 60 92 Z"/><line x1="60" y1="30" x2="60" y2="92"/><line x1="25" y1="40" x2="48" y2="40"/><line x1="25" y1="52" x2="48" y2="52"/><line x1="72" y1="40" x2="95" y2="40"/><line x1="72" y1="52" x2="95" y2="52"/>`,
-  suapha: `<path d="M40 20 L25 35 L35 50 L40 45 L40 100 L80 100 L80 45 L85 50 L95 35 L80 20 C80 30 40 30 40 20 Z"/>`,
-  lookball: `<circle cx="60" cy="60" r="42"/><path d="M60 18 L60 102 M18 60 L102 60"/><path d="M25 25 Q60 45 95 25 M25 95 Q60 75 95 95"/>`,
-  kaoee: `<rect x="30" y="15" width="45" height="12" rx="4"/><line x1="30" y1="27" x2="30" y2="65"/><line x1="75" y1="27" x2="75" y2="65"/><rect x="25" y="65" width="55" height="12" rx="4"/><line x1="30" y1="77" x2="25" y2="105"/><line x1="75" y1="77" x2="80" y2="105"/><line x1="35" y1="77" x2="32" y2="105"/><line x1="70" y1="77" x2="73" y2="105"/>`,
-  pratu: `<rect x="30" y="12" width="60" height="98" rx="6"/><circle cx="75" cy="62" r="3" fill="#1e293b" stroke="none"/><line x1="30" y1="12" x2="15" y2="20"/><line x1="15" y1="20" x2="15" y2="110"/><line x1="15" y1="110" x2="30" y2="110"/>`,
-  rotfai: `<rect x="15" y="45" width="60" height="35" rx="8"/><rect x="30" y="20" width="20" height="25" rx="4"/><circle cx="30" cy="90" r="9"/><circle cx="60" cy="90" r="9"/><circle cx="55" cy="60" r="8"/><path d="M75 55 L100 55 L95 80 L75 80 Z"/><circle cx="88" cy="90" r="9"/>`,
-  duangdao: `<polygon points="60,10 72,45 110,45 79,67 91,102 60,80 29,102 41,67 10,45 48,45"/>`,
-  prajan: `<path d="M75 15 A45 45 0 1 0 75 105 A34 34 0 1 1 75 15 Z"/>`,
-  pladao: `<path d="M60,10 Q75,35 108,42 Q82,55 88,88 Q60,68 32,88 Q38,55 12,42 Q45,35 60,10 Z"/><circle cx="60" cy="55" r="2.5" fill="#1e293b" stroke="none"/><circle cx="70" cy="45" r="2" fill="#1e293b" stroke="none"/><circle cx="50" cy="45" r="2" fill="#1e293b" stroke="none"/>`
-};
+// ================== รูปภาพประกอบคำศัพท์ (ไฟล์จริงในโฟลเดอร์ images/) ==================
+const PIC_KEYS = ["dokmai","mamuang","peesuea","krapao","rongtao","waenta","lookmaew","taobok","tonmai","nangsue","suapha","lookball","kaoee","pratu","rotfai","duangdao","prajan","pladao"];
 
-function iconSvg(key){
-  return `<svg viewBox="0 0 120 120" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${ICONS[key]}</svg>`;
+function iconImg(key){
+  return `<img src="images/${key}.png" alt="" draggable="false">`;
 }
 
 // ================== ชุดคำศัพท์ (3 ชุด ชุดละ 6 คู่ = 18 คู่) ==================
@@ -285,7 +266,7 @@ const MATCH_SETS = [
 ];
 
 const LETTERS = ["ก","ข","ค","ง","จ","ฉ","ช","ซ"];
-const ALL_KEYS = Object.keys(ICONS);
+const ALL_KEYS = PIC_KEYS;
 const LB_KEY = "matching_game_p1_scores";
 const DECOY_COUNT = 2;
 
@@ -341,7 +322,7 @@ function loadRound(){
     const card = document.createElement("div");
     card.className = "pic-card";
     card.dataset.key = p.key;
-    card.innerHTML = iconSvg(p.key);
+    card.innerHTML = iconImg(p.key);
     const tag = document.createElement("div");
     tag.className = "letter-tag";
     tag.textContent = p.letter;
