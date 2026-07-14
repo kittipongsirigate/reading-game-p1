@@ -21,17 +21,8 @@
   h1 { font-size:clamp(28px,6vw,44px); color:#2d6a4f; text-shadow:2px 2px 0 #fff; margin-top:6px; }
   .subtitle { font-size:clamp(16px,3.6vw,22px); color:#40513b; margin-top:8px; }
 
-  .grade-section { width:100%; max-width:1000px; margin-bottom:30px; }
-  .grade-title {
-    font-size:clamp(20px,4.5vw,26px); font-weight:bold; color:#7c2d12;
-    margin:0 6px 14px; display:flex; align-items:center; gap:10px;
-  }
-  .grade-badge {
-    background:#fff; border-radius:16px; padding:4px 14px;
-    box-shadow:0 3px 8px rgba(0,0,0,.12); font-size:clamp(16px,4vw,20px);
-  }
-
   .game-grid {
+    width:100%; max-width:1000px;
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
     gap:20px;
@@ -81,74 +72,57 @@
 <script>
 // ============================================================
 // รายชื่อเกมทั้งหมด — เพิ่มเกมใหม่ในอนาคตแค่เพิ่ม object ในนี้
-// grade  : ชั้นเรียน เช่น "ป.1"
 // title  : ชื่อเกม
-// desc   : คำอธิบายสั้นๆ
+// desc   : คำอธิบายสั้นๆ ว่าเกมนี้คืออะไร
 // icon   : อีโมจิไอคอนเกม
 // file   : ไฟล์ .html ของเกม (เว้นว่างหรือใส่ ready:false ถ้ายังไม่พร้อม)
 // ready  : true = เล่นได้แล้ว, false = เร็วๆนี้
 // ============================================================
 const GAMES = [
   {
-    grade: "ป.1",
     title: "เกมอ่านออกเสียง",
-    desc: "คำ 2 พยางค์ อ่านให้ถูก รับดาวสะสม",
+    desc: "อ่านคำ 2 พยางค์ให้ถูกต้อง สะสมดาว (ป.1)",
     icon: "🦉",
     file: "reading-game-p1.html",
     ready: true
   },
   {
-    grade: "ป.2",
-    title: "เร็วๆ นี้",
-    desc: "กำลังเตรียมเกมสนุกๆ สำหรับ ป.2",
-    icon: "🐣",
-    file: "",
-    ready: false
+    title: "เกมจับคู่คำ-รูปภาพ",
+    desc: "ลากตัวอักษรไปวางให้ตรงกับภาพ (ป.1)",
+    icon: "🧩",
+    file: "matching-game-p1.html",
+    ready: true
   },
   {
-    grade: "ป.3",
     title: "เร็วๆ นี้",
-    desc: "กำลังเตรียมเกมสนุกๆ สำหรับ ป.3",
-    icon: "🐥",
+    desc: "กำลังเตรียมเกมสนุกๆ เพิ่มเติมให้เล่นกัน",
+    icon: "🐣",
     file: "",
     ready: false
   }
 ];
 
 function render(){
-  // จัดกลุ่มตามชั้นเรียน
-  const grades = [...new Set(GAMES.map(g => g.grade))];
   const container = document.getElementById("gameSections");
   container.innerHTML = "";
 
-  grades.forEach(grade => {
-    const section = document.createElement("div");
-    section.className = "grade-section";
+  const grid = document.createElement("div");
+  grid.className = "game-grid";
 
-    const gradeTitle = document.createElement("div");
-    gradeTitle.className = "grade-title";
-    gradeTitle.innerHTML = `<span class="grade-badge">${grade}</span>`;
-    section.appendChild(gradeTitle);
-
-    const grid = document.createElement("div");
-    grid.className = "game-grid";
-
-    GAMES.filter(g => g.grade === grade).forEach(g => {
-      const card = document.createElement(g.ready ? "a" : "div");
-      card.className = "game-card" + (g.ready ? "" : " soon");
-      if (g.ready) card.href = g.file;
-      card.innerHTML = `
-        <div class="game-icon">${g.icon}</div>
-        <div class="game-title">${g.title}</div>
-        <div class="game-desc">${g.desc}</div>
-        <div class="play-pill">${g.ready ? "▶ เล่นเลย" : "🔒 เร็วๆ นี้"}</div>
-      `;
-      grid.appendChild(card);
-    });
-
-    section.appendChild(grid);
-    container.appendChild(section);
+  GAMES.forEach(g => {
+    const card = document.createElement(g.ready ? "a" : "div");
+    card.className = "game-card" + (g.ready ? "" : " soon");
+    if (g.ready) card.href = g.file;
+    card.innerHTML = `
+      <div class="game-icon">${g.icon}</div>
+      <div class="game-title">${g.title}</div>
+      <div class="game-desc">${g.desc}</div>
+      <div class="play-pill">${g.ready ? "▶ เล่นเลย" : "🔒 เร็วๆ นี้"}</div>
+    `;
+    grid.appendChild(card);
   });
+
+  container.appendChild(grid);
 }
 render();
 </script>
