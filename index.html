@@ -13,18 +13,21 @@
     min-height:100%;
     display:flex; flex-direction:column; align-items:center;
     padding:28px 20px 60px;
+    overflow-x:hidden;
   }
 
-  header { text-align:center; margin-bottom:30px; }
+  header { text-align:center; margin-bottom:30px; width:100%; min-width:0; }
   .mascot { font-size:clamp(60px,12vw,90px); animation:bounce 1.8s infinite; }
   @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
   h1 { font-size:clamp(28px,6vw,44px); color:#2d6a4f; text-shadow:2px 2px 0 #fff; margin-top:6px; }
   .subtitle { font-size:clamp(16px,3.6vw,22px); color:#40513b; margin-top:8px; }
 
+  #gameSections { width:100%; min-width:0; display:flex; justify-content:center; }
+
   .game-grid {
-    width:100%; max-width:1000px;
+    width:100%; max-width:1000px; min-width:0;
     display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns:repeat(auto-fill, minmax(min(240px, 100%), 1fr));
     gap:20px;
   }
 
