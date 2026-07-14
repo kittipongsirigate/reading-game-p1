@@ -364,6 +364,33 @@ function homeCardOf(tile){
   return document.querySelector(`.pic-card[data-key="${tile.dataset.key}"]`);
 }
 
+// ================== เลื่อนจออัตโนมัติขณะลาก (สำหรับมือถือ ที่ลากออกนอกจอไม่ได้) ==================
+let autoScrollRAF = null;
+let dragPointerY = null;
+const AUTOSCROLL_EDGE = 70;
+const AUTOSCROLL_SPEED = 12;
+
+function autoScrollStep(){
+  if (dragPointerY == null){ autoScrollRAF = null; return; }
+  const scrollEl = document.getElementById("gameScreen");
+  const vh = window.innerHeight;
+  let dy = 0;
+  if (dragPointerY < AUTOSCROLL_EDGE){
+    dy = -AUTOSCROLL_SPEED * (1 - dragPointerY / AUTOSCROLL_EDGE);
+  } else if (dragPointerY > vh - AUTOSCROLL_EDGE){
+    dy = AUTOSCROLL_SPEED * (1 - (vh - dragPointerY) / AUTOSCROLL_EDGE);
+  }
+  if (dy !== 0 && scrollEl) scrollEl.scrollTop += dy;
+  autoScrollRAF = requestAnimationFrame(autoScrollStep);
+}
+function startAutoScroll(){
+  if (!autoScrollRAF) autoScrollRAF = requestAnimationFrame(autoScrollStep);
+}
+function stopAutoScroll(){
+  dragPointerY = null;
+  if (autoScrollRAF){ cancelAnimationFrame(autoScrollRAF); autoScrollRAF = null; }
+}
+
 // ================== ระบบลาก-วาง (Pointer Events รองรับทั้งเมาส์และทัช) ==================
 // ตัวอักษรเริ่มติดอยู่ที่มุมภาพ ลากไปวางที่ช่องคำตอบได้โดยตรง
 // ถ้าวางผิดที่ หรือถูกสลับออก จะเด้งกลับไปที่ภาพเดิมของมันเอง
@@ -386,10 +413,13 @@ function attachDrag(tile){
     function move(e){
       tile.style.left = (e.clientX - offX) + "px";
       tile.style.top = (e.clientY - offY) + "px";
+      dragPointerY = e.clientY;
+      startAutoScroll();
     }
     function up(e){
       tile.removeEventListener("pointermove", move);
       tile.removeEventListener("pointerup", up);
+      stopAutoScroll();
       tile.classList.remove("dragging");
       tile.style.visibility = "hidden";
       const under = document.elementFromPoint(e.clientX, e.clientY);
