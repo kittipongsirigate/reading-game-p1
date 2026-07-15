@@ -97,6 +97,11 @@
   #endScreen h1 { font-size:clamp(28px,6.5vw,40px); color:#b45309; text-shadow:2px 2px 0 #fff; margin-bottom:10px; }
   #endScreen .trophy { font-size:clamp(60px,16vw,90px); animation:bounce 1.6s infinite; }
   #againBtn { font-size:clamp(20px,5vw,26px); padding:16px 44px; background:linear-gradient(180deg,#a78bfa,#8b5cf6); color:#fff; margin-top:20px; }
+  .home-link-btn {
+    font-size:clamp(17px,4.2vw,22px); padding:12px 34px; margin-top:12px;
+    background:#e2e8f0; color:#334155; text-decoration:none;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
 </style>
 </head>
 <body>
@@ -108,6 +113,7 @@
   <div class="mascot">📖</div>
   <h1 class="title">เกมอ่านคล่อง</h1>
   <p class="subtitle">อ่านเรื่องสั้นทีละบรรทัด<br>อ่านจบแล้วกดปุ่มไปบรรทัดถัดไปได้เลย</p>
+  <p class="subtitle" id="greetLine" style="margin-top:-10px;"></p>
   <button class="big-btn primary-btn" id="startBtn">▶ เริ่มอ่าน</button>
 </div>
 
@@ -130,6 +136,7 @@
   <h1>อ่านจบแล้ว!</h1>
   <p class="subtitle">เก่งมากเลย 🎉</p>
   <button class="big-btn" id="againBtn">🔄 อ่านอีกครั้ง</button>
+  <a href="index.html" class="big-btn home-link-btn">🏠 กลับหน้าหลัก</a>
 </div>
 
 <script>
@@ -161,11 +168,26 @@ const LINES = [
 const TOTAL_LINES = LINES.length;
 const LOOKAHEAD = 2; // จำนวนบรรทัดที่ยังไม่ปลดล็อกที่โชว์ล่วงหน้า (สีเทา)
 
+const COMPLETE_KEY = "fluency_game_p1_completions";
+
 // ================== ตัวแปรเกม ==================
 let lineIdx = 0;
 let audioCtx = null;
 
 const $ = id => document.getElementById(id);
+// ชื่อผู้เล่น — ใช้ชื่อที่ตั้งไว้ที่หน้าแรกของเว็บ ไม่ต้องพิมพ์ซ้ำทุกครั้ง
+const NAME_KEY = "p1_player_name";
+let playerName = (localStorage.getItem(NAME_KEY) || "").trim();
+if (!playerName) location.href = "index.html";
+else { const g = document.getElementById("greetLine"); if (g) g.textContent = `สวัสดี ${playerName}! พร้อมอ่านหรือยัง? 😊`; }
+
+function markCompleted(name){
+  try {
+    const list = JSON.parse(localStorage.getItem(COMPLETE_KEY)) || [];
+    list.push({ name, ts: Date.now() });
+    localStorage.setItem(COMPLETE_KEY, JSON.stringify(list.slice(-100)));
+  } catch(e){}
+}
 
 // ================== เสียงพูดตัวอย่าง (TTS) ==================
 function speak(text){
@@ -268,6 +290,7 @@ function playTone(){
 // ================== จบเกม ==================
 function endGame(){
   $("progressFill").style.width = "100%";
+  markCompleted(playerName);
   showScreen("endScreen");
   speak("เก่งมากๆเลย อ่านจบแล้ว");
 }

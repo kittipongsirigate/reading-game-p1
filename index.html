@@ -16,11 +16,24 @@
     overflow-x:hidden;
   }
 
-  header { text-align:center; margin-bottom:30px; width:100%; min-width:0; }
+  header { text-align:center; margin-bottom:14px; width:100%; min-width:0; }
   .mascot { font-size:clamp(60px,12vw,90px); animation:bounce 1.8s infinite; }
   @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
   h1 { font-size:clamp(28px,6vw,44px); color:#2d6a4f; text-shadow:2px 2px 0 #fff; margin-top:6px; }
   .subtitle { font-size:clamp(16px,3.6vw,22px); color:#40513b; margin-top:8px; }
+
+  /* ---------- ป้ายทักทาย + เปลี่ยนชื่อ ---------- */
+  .greet-tag {
+    display:none; align-items:center; gap:10px; margin-bottom:24px;
+    background:#fff; border-radius:24px; padding:8px 10px 8px 18px;
+    box-shadow:0 4px 10px rgba(0,0,0,.12);
+    font-size:clamp(15px,3.6vw,18px); font-weight:bold; color:#0f766e;
+  }
+  .greet-tag button {
+    font-family:inherit; font-weight:bold; font-size:clamp(13px,3.2vw,15px);
+    border:none; border-radius:18px; padding:7px 14px; cursor:pointer;
+    background:#f0fdf4; color:#15803d;
+  }
 
   #gameSections { width:100%; min-width:0; display:flex; justify-content:center; }
 
@@ -57,10 +70,64 @@
   .game-card.soon .play-pill { background:#e2e8f0; color:#94a3b8; box-shadow:none; }
   .game-card.soon:active { transform:none; box-shadow:0 8px 20px rgba(0,0,0,.15); }
 
-  footer { margin-top:10px; font-size:clamp(12px,3vw,14px); color:#64748b; text-align:center; }
+  /* ---------- ปุ่มสรุปคะแนน ---------- */
+  .summary-btn {
+    display:flex; align-items:center; gap:10px; justify-content:center;
+    margin-top:26px; text-decoration:none;
+    font-family:inherit; font-weight:bold; font-size:clamp(17px,4vw,21px);
+    color:#4c0519; background:linear-gradient(180deg,#fda4af,#fb7185);
+    padding:16px 36px; border-radius:28px;
+    box-shadow:0 5px 0 rgba(0,0,0,.15);
+    transition:transform .1s, box-shadow .1s;
+  }
+  .summary-btn:active { transform:translateY(4px); box-shadow:0 1px 0 rgba(0,0,0,.15); }
+
+  footer { margin-top:22px; font-size:clamp(12px,3vw,14px); color:#64748b; text-align:center; }
+  .credit { margin-top:10px; font-size:clamp(11px,2.8vw,13px); color:#94a3b8; }
+
+  /* ---------- หน้าต่างใส่ชื่อ (แสดงครั้งแรกที่เข้าเว็บ) ---------- */
+  .name-overlay {
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(15,23,42,.55);
+    align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .name-overlay.show { display:flex; }
+  .name-card {
+    background:#fff; border-radius:32px; padding:34px 28px;
+    max-width:360px; width:100%; text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+  }
+  .name-card .mascot { font-size:56px; animation:bounce 1.6s infinite; }
+  .name-card h2 { font-size:clamp(19px,5vw,24px); color:#2d6a4f; margin:10px 0 18px; }
+  #nameInput {
+    font-family:inherit; font-size:clamp(20px,5.5vw,26px); font-weight:bold;
+    text-align:center; color:#1e293b;
+    border:4px solid #60a5fa; border-radius:22px; outline:none;
+    padding:12px 16px; width:100%; margin-bottom:18px;
+    background:#fff;
+  }
+  #nameInput:focus { border-color:#2563eb; }
+  .name-card .primary-btn {
+    width:100%; font-family:inherit; font-weight:bold; cursor:pointer; border:none;
+    font-size:clamp(19px,5vw,24px); padding:16px; border-radius:22px;
+    background:linear-gradient(180deg,#ffd93d,#ff9f1c); color:#7a3b00;
+    box-shadow:0 5px 0 rgba(0,0,0,.15);
+    transition:transform .1s, box-shadow .1s;
+  }
+  .name-card .primary-btn:active { transform:translateY(4px); box-shadow:0 1px 0 rgba(0,0,0,.15); }
 </style>
 </head>
 <body>
+
+<div class="name-overlay" id="nameOverlay">
+  <div class="name-card">
+    <div class="mascot">👋</div>
+    <h2>สวัสดี! บอกชื่อของหนูหน่อย</h2>
+    <input id="nameInput" type="text" maxlength="15" placeholder="พิมพ์ชื่อของหนู..." autocomplete="off">
+    <button class="primary-btn" id="nameSaveBtn">✔ ยืนยัน</button>
+  </div>
+</div>
 
 <header>
   <div class="mascot">🦉</div>
@@ -68,9 +135,19 @@
   <p class="subtitle">เลือกเกมที่อยากเล่นได้เลย ⭐</p>
 </header>
 
+<div class="greet-tag" id="greetTag">
+  <span id="greetText"></span>
+  <button id="changeNameBtn">เปลี่ยนชื่อ ✏️</button>
+</div>
+
 <div id="gameSections"></div>
 
-<footer>ทำการบ้าน อ่านหนังสือ แล้วค่อยมาเล่นนะ 😊</footer>
+<a href="scores-summary-p1.html" class="summary-btn">📊 สรุปคะแนนของฉัน</a>
+
+<footer>
+  ทำการบ้าน อ่านหนังสือ แล้วค่อยมาเล่นนะ 😊
+  <div class="credit">จัดทำโดย ครูวิจารณ์ ศิริเกษ</div>
+</footer>
 
 <script>
 // ============================================================
@@ -142,6 +219,48 @@ function render(){
   container.appendChild(grid);
 }
 render();
+
+// ============================================================
+// ชื่อผู้เล่น — เก็บไว้ที่เดียวใช้ร่วมกันทุกเกม (ไม่ต้องพิมพ์ชื่อซ้ำทุกครั้ง)
+// ============================================================
+const NAME_KEY = "p1_player_name";
+const $ = id => document.getElementById(id);
+
+function getName(){ return (localStorage.getItem(NAME_KEY) || "").trim(); }
+function setName(n){ localStorage.setItem(NAME_KEY, n); }
+
+function showNameOverlay(){
+  $("nameOverlay").classList.add("show");
+  $("nameInput").value = "";
+  $("nameInput").focus();
+}
+function hideNameOverlay(){ $("nameOverlay").classList.remove("show"); }
+
+function updateGreet(){
+  const name = getName();
+  if (name){
+    $("greetText").textContent = `สวัสดี, ${name} 👋`;
+    $("greetTag").style.display = "flex";
+  } else {
+    $("greetTag").style.display = "none";
+  }
+}
+
+$("nameSaveBtn").onclick = () => {
+  const v = $("nameInput").value.trim();
+  if (!v){
+    $("nameInput").placeholder = "ใส่ชื่อก่อนนะ 😊";
+    $("nameInput").focus();
+    return;
+  }
+  setName(v);
+  hideNameOverlay();
+  updateGreet();
+};
+$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("nameSaveBtn").click(); });
+$("changeNameBtn").onclick = showNameOverlay;
+
+if (!getName()) showNameOverlay(); else updateGreet();
 </script>
 </body>
 </html>

@@ -139,6 +139,11 @@
   #endScreen .trophy { font-size:clamp(56px,15vw,84px); animation:bounce 1.6s infinite; }
   #finalStars { font-size:clamp(19px,4.8vw,25px); color:#1e293b; margin:10px 0 14px; font-weight:bold; }
   #againBtn { font-size:clamp(19px,4.8vw,24px); padding:14px 40px; background:linear-gradient(180deg,#a78bfa,#8b5cf6); color:#fff; margin-top:14px; }
+  .home-link-btn {
+    font-size:clamp(16px,4vw,20px); padding:11px 30px; margin-top:12px;
+    background:#e2e8f0; color:#334155; text-decoration:none;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
 
   .board {
     background:#fff; border-radius:22px; padding:14px 18px;
@@ -165,7 +170,7 @@
   <div class="mascot">📝</div>
   <h1 class="title">เกมเรียงประโยค</h1>
   <p class="subtitle">ดูภาพแล้วลากคำมาเรียงให้เป็นประโยคที่ถูกต้อง<br>ตอบครบ 5 ข้อ รับดาวสะสม ⭐</p>
-  <input id="nameInput" type="text" maxlength="15" placeholder="พิมพ์ชื่อของหนู..." autocomplete="off">
+  <p class="subtitle" id="greetLine" style="margin-top:-10px;"></p>
   <button class="big-btn primary-btn" id="startBtn">▶ เริ่มเล่น</button>
 </div>
 
@@ -200,28 +205,35 @@
     </table>
   </div>
   <button class="big-btn" id="againBtn">🔄 เล่นอีกครั้ง</button>
+  <a href="index.html" class="big-btn home-link-btn">🏠 กลับหน้าหลัก</a>
 </div>
 
 <script>
 // ================== ชุดโจทย์ (5 ข้อ คงที่ สุ่มลำดับตอนเริ่มเล่น) ==================
 // scene = ชื่อไฟล์รูปใน images/ (เช่น scene:"swim" -> images/swim.png)
+// answers = รายการลำดับคำที่ยอมรับว่าถูกต้อง (บางข้อมีได้มากกว่า 1 ลำดับ)
 const QUESTIONS = [
-  { scene:"swim",   answer:["ฉัน","กำลัง","ว่ายน้ำ"] },
-  { scene:"trash",  answer:["หนูและ","พ่อแม่","กำลัง","คัดแยกขยะ"] },
-  { scene:"toys",   answer:["ฉันและ","น้อง","กำลังเล่น","ของเล่น"] },
-  { scene:"market", answer:["ฉันกับแม่","ไป","ตลาด"] },
-  { scene:"sea",    answer:["ฉัน","เล่นน้ำ","กับครอบครัว"] },
+  { scene:"swim",   answers:[["ฉัน","กำลัง","ว่ายน้ำ"]] },
+  { scene:"trash",  answers:[["หนูและ","พ่อแม่","กำลัง","คัดแยกขยะ"]] },
+  { scene:"toys",   answers:[["ฉันและ","น้อง","กำลังเล่น","ของเล่น"]] },
+  { scene:"market", answers:[["ฉันกับแม่","ไป","ตลาด"]] },
+  { scene:"sea",    answers:[["ฉัน","กับครอบครัว","เล่นน้ำ"], ["ฉัน","เล่นน้ำ","กับครอบครัว"]] },
 ];
 const TOTAL_ROUNDS = QUESTIONS.length;
-const TOTAL_STARS = QUESTIONS.reduce((s,q)=>s+q.answer.length, 0);
+const TOTAL_STARS = QUESTIONS.reduce((s,q)=>s+q.answers[0].length, 0);
 
 const LB_KEY = "sentence_game_p1_scores";
 
-let questionOrder = [], roundIdx = 0, stars = 0, playerName = "";
+let questionOrder = [], roundIdx = 0, stars = 0;
 let checkedRound = false;
 
 const $ = id => document.getElementById(id);
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+// ชื่อผู้เล่น — ใช้ชื่อที่ตั้งไว้ที่หน้าแรกของเว็บ ไม่ต้องพิมพ์ซ้ำทุกครั้ง
+const NAME_KEY = "p1_player_name";
+let playerName = (localStorage.getItem(NAME_KEY) || "").trim();
+if (!playerName) location.href = "index.html";
+else { const g = document.getElementById("greetLine"); if (g) g.textContent = `สวัสดี ${playerName}! พร้อมเล่นหรือยัง? 😊`; }
 
 // ================== เริ่มเกม ==================
 function startGame(){
@@ -249,16 +261,16 @@ function loadRound(){
   // ช่องคำตอบ (จำนวนช่อง = จำนวนคำในประโยคที่ถูกต้องของข้อนั้น)
   const slotsRow = $("slotsRow");
   slotsRow.innerHTML = "";
-  q.answer.forEach(() => {
+  q.answers[0].forEach(() => {
     const slot = document.createElement("div");
     slot.className = "slot";
     slotsRow.appendChild(slot);
   });
-  // เก็บคำที่ถูกต้องตามตำแหน่งไว้ตรวจทีหลัง (ไม่ผูกกับช่องใดช่องหนึ่งโดยตรง เพราะเด็กเลือกช่องเองได้)
-  slotsRow.dataset.expected = JSON.stringify(q.answer);
+  // เก็บลำดับคำตอบที่ยอมรับทั้งหมดไว้ตรวจทีหลัง (ไม่ผูกกับช่องใดช่องหนึ่งโดยตรง เพราะเด็กเลือกช่องเองได้)
+  slotsRow.dataset.expected = JSON.stringify(q.answers);
 
-  // คำในคลังคำ (เฉพาะคำตอบที่ถูกต้อง ไม่มีคำหลอก สุ่มลำดับ)
-  const allWords = shuffle([...q.answer]);
+  // คำในคลังคำ (เฉพาะคำตอบที่ถูกต้อง ไม่มีคำหลอก สุ่มลำดับ) — ทุกลำดับที่ยอมรับใช้คำชุดเดียวกัน
+  const allWords = shuffle([...q.answers[0]]);
   const bank = $("wordBank");
   bank.innerHTML = "";
   allWords.forEach(w => {
@@ -366,17 +378,30 @@ function attachDrag(chip){
 }
 
 // ================== ตรวจคำตอบ (ตรวจตามลำดับตำแหน่งของช่อง ซ้ายไปขวา) ==================
+// บางข้อยอมรับได้หลายลำดับ (q.answers มีได้มากกว่า 1 แบบ) — เทียบกับทุกลำดับที่ยอมรับ
+// แล้วเลือกลำดับที่ตรงกับสิ่งที่เด็กวางมากที่สุดมาใช้ไฮไลท์ถูก/ผิดทีละช่อง
 function checkAnswers(){
   if (checkedRound) return;
   checkedRound = true;
 
   const q = questionOrder[roundIdx - 1];
   const slotEls = Array.from(document.querySelectorAll(".slot"));
-  let correctCount = 0;
+  const placed = slotEls.map(slot => {
+    const chip = slot.querySelector(".word-chip");
+    return chip ? chip.dataset.word : null;
+  });
 
+  const wordCount = q.answers[0].length;
+  let bestOrder = q.answers[0], bestCount = -1;
+  q.answers.forEach(ans => {
+    const count = ans.reduce((n, w, i) => n + (placed[i] === w ? 1 : 0), 0);
+    if (count > bestCount){ bestCount = count; bestOrder = ans; }
+  });
+
+  let correctCount = 0;
   slotEls.forEach((slot, i) => {
     const chip = slot.querySelector(".word-chip");
-    const expected = q.answer[i];
+    const expected = bestOrder[i];
     if (chip && chip.dataset.word === expected){
       slot.classList.add("correct");
       correctCount++;
@@ -387,12 +412,13 @@ function checkAnswers(){
 
   stars += correctCount;
   $("starCount").textContent = stars;
-  playTone(correctCount === q.answer.length);
+  playTone(correctCount === wordCount);
 
-  if (correctCount === q.answer.length){
+  if (correctCount === wordCount){
     setFeedback("ถูกต้องหมดเลย! 🎉", "good");
   } else {
-    setFeedback(`ถูก ${correctCount}/${q.answer.length} คำ ประโยคที่ถูกคือ "${q.answer.join("")}"`, "info");
+    const correctForms = q.answers.map(a => `"${a.join("")}"`).join(" หรือ ");
+    setFeedback(`ถูก ${correctCount}/${wordCount} คำ ประโยคที่ถูกคือ ${correctForms}`, "info");
   }
 
   $("checkBtn").disabled = true;
@@ -436,7 +462,7 @@ function saveScore(name, score){
   return entry;
 }
 function renderBoard(myEntry){
-  const scores = loadScores().slice(0,10);
+  const scores = loadScores().slice(0,5);
   const tbody = $("boardBody");
   tbody.innerHTML = "";
   if (scores.length === 0){
@@ -464,23 +490,11 @@ function endGame(){
 
 // ================== Events ==================
 $("startBtn").onclick = () => {
-  const name = $("nameInput").value.trim();
-  if (!name){
-    $("nameInput").placeholder = "ใส่ชื่อก่อนนะ 😊";
-    $("nameInput").focus();
-    return;
-  }
-  playerName = name;
   playTone(true);
   startGame();
 };
-$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("startBtn").click(); });
 $("checkBtn").onclick = checkAnswers;
-$("againBtn").onclick = () => {
-  $("nameInput").value = "";
-  showScreen("nameScreen");
-  $("nameInput").focus();
-};
+$("againBtn").onclick = () => { showScreen("nameScreen"); };
 </script>
 </body>
 </html>

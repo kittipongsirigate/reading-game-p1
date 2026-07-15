@@ -154,6 +154,11 @@
   #endScreen .trophy { font-size:clamp(60px,16vw,90px); animation:bounce 1.6s infinite; }
   #finalStars { font-size:clamp(20px,5vw,26px); color:#1e293b; margin:10px 0 14px; font-weight:bold; }
   #againBtn { font-size:clamp(20px,5vw,26px); padding:16px 44px; background:linear-gradient(180deg,#a78bfa,#8b5cf6); color:#fff; margin-top:16px; }
+  .home-link-btn {
+    font-size:clamp(17px,4.2vw,22px); padding:12px 34px; margin-top:12px;
+    background:#e2e8f0; color:#334155; text-decoration:none;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
 
   .board {
     background:#fff; border-radius:24px; padding:14px 18px;
@@ -183,7 +188,7 @@
   <div class="mascot">🦉</div>
   <h1 class="title">เกมอ่านออกเสียง</h1>
   <p class="subtitle">คำ 2 พยางค์ ชั้น ป.1<br>อ่านให้ถูก รับดาวสะสม ⭐</p>
-  <input id="nameInput" type="text" maxlength="15" placeholder="พิมพ์ชื่อของหนู..." autocomplete="off">
+  <p class="subtitle" id="greetLine" style="margin-top:-14px;"></p>
   <button class="big-btn primary-btn" id="startBtn">▶ เริ่มเล่น</button>
   <div class="warn" id="warnBox">
     ⚠️ เบราว์เซอร์นี้ไม่รองรับการฟังเสียง<br>
@@ -240,6 +245,7 @@
     </table>
   </div>
   <button class="big-btn" id="againBtn">🔄 เล่นอีกครั้ง</button>
+  <a href="index.html" class="big-btn home-link-btn">🏠 กลับหน้าหลัก</a>
 </div>
 
 <script>
@@ -384,11 +390,15 @@ const LB_KEY = "reading_game_p1_scores";
 
 // ================== ตัวแปรเกม ==================
 let order = [], idx = 0, stars = 0, tries = 0;
-let playerName = "";
 let recognizing = false, recognition = null;
 let micReady = false;
 
 const $ = id => document.getElementById(id);
+// ชื่อผู้เล่น — ใช้ชื่อที่ตั้งไว้ที่หน้าแรกของเว็บ ไม่ต้องพิมพ์ซ้ำทุกครั้ง
+const NAME_KEY = "p1_player_name";
+let playerName = (localStorage.getItem(NAME_KEY) || "").trim();
+if (!playerName) location.href = "index.html";
+else { const g = document.getElementById("greetLine"); if (g) g.textContent = `สวัสดี ${playerName}! พร้อมเล่นหรือยัง? 😊`; }
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const hasSR = !!SR;
 // Chrome (ทั้งบนมือถือและพีซี): ถ้ามีสตรีมไมค์ (getUserMedia) ค้างไว้พร้อมกับ SpeechRecognition กำลังทำงาน
@@ -699,7 +709,7 @@ function saveScore(name, score){
   return entry;
 }
 function renderBoard(myEntry){
-  const scores = loadScores().slice(0,10);
+  const scores = loadScores().slice(0,5);
   const tbody = $("boardBody");
   tbody.innerHTML = "";
   if (scores.length === 0){
@@ -758,30 +768,18 @@ function endGame(){
 
 // ================== Events ==================
 $("startBtn").onclick = async () => {
-  const name = $("nameInput").value.trim();
-  if (!name){
-    $("nameInput").placeholder = "ใส่ชื่อก่อนนะ 😊";
-    $("nameInput").focus();
-    return;
-  }
-  playerName = name;
   playTone(true);           // ปลดล็อกเสียงบน iOS
   speechSynthesis.cancel(); // ปลดล็อก TTS
   if (hasSR) ensureMic();   // ขอสิทธิ์ไมค์ตั้งแต่ตอนเริ่ม จะได้ไม่มี popup ตัดจังหวะตอนพูด
   else showManual();
   startGame();
 };
-$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("startBtn").click(); });
 $("listenBtn").onclick = () => speak(order[idx].w);
 $("micBtn").onclick    = onMicPress;
 $("skipBtn").onclick   = () => { idx++; loadWord(); };
 $("manualOk").onclick  = correct;
 $("manualNo").onclick  = () => wrong("");
-$("againBtn").onclick  = () => {
-  $("nameInput").value = "";
-  showScreen("nameScreen");
-  $("nameInput").focus();
-};
+$("againBtn").onclick  = () => { showScreen("nameScreen"); };
 
 if (!hasSR){ $("warnBox").style.display = "block"; }
 </script>
