@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>เกมเรียงประโยค ป.1 📝</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+  html,body { height:100%; }
+  body {
+    font-family:'Sarabun','Segoe UI',Tahoma,sans-serif;
+    background: linear-gradient(160deg,#ffe1e6 0%,#e2f7d8 50%,#fff3b0 100%);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .screen {
+    width:100%; max-width:720px; height:100%; max-height:900px;
+    display:none; flex-direction:column; align-items:center; justify-content:flex-start;
+    padding:54px 16px 20px; text-align:center; position:relative;
+    overflow-y:auto;
+  }
+  #nameScreen, #endScreen { justify-content:center; }
+  #gameScreen { max-width:900px; }
+  .screen.active { display:flex; }
+
+  .big-btn {
+    border:none; border-radius:28px; cursor:pointer;
+    font-family:inherit; font-weight:bold;
+    box-shadow:0 6px 0 rgba(0,0,0,.18);
+    transition:transform .1s, box-shadow .1s, opacity .15s;
+    touch-action:manipulation;
+  }
+  .big-btn:active { transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.18); }
+  .big-btn:disabled { opacity:.45; cursor:default; box-shadow:0 6px 0 rgba(0,0,0,.1); }
+  .big-btn:disabled:active { transform:none; }
+
+  h1.title { font-size:clamp(26px,6vw,38px); color:#9d174d; margin-bottom:8px; text-shadow:2px 2px 0 #fff; }
+  .mascot { font-size:clamp(60px,16vw,96px); animation:bounce 1.6s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+  .subtitle { font-size:clamp(15px,3.6vw,19px); color:#40513b; margin:12px 0 22px; line-height:1.6; }
+  .primary-btn {
+    font-size:clamp(22px,5.5vw,28px); padding:18px 52px;
+    background:linear-gradient(180deg,#fda4af,#fb7185); color:#4c0519;
+  }
+  #nameInput {
+    font-family:inherit; font-size:clamp(20px,5vw,26px); font-weight:bold;
+    text-align:center; color:#1e293b;
+    border:4px solid #fb7185; border-radius:22px; outline:none;
+    padding:12px 16px; width:min(80vw,320px); margin:8px 0 22px;
+    background:#fff;
+  }
+  #nameInput:focus { border-color:#e11d48; }
+
+  .home-btn {
+    position:fixed; top:12px; left:14px; z-index:100;
+    background:#fff; border-radius:20px; padding:8px 16px;
+    font-size:clamp(14px,3.6vw,17px); font-weight:bold; color:#0f766e;
+    box-shadow:0 3px 8px rgba(0,0,0,.15);
+    text-decoration:none; display:flex; align-items:center; gap:6px;
+  }
+  .home-btn:active { transform:translateY(2px); }
+
+  .topbar {
+    width:100%; max-width:900px;
+    display:flex; justify-content:space-between; align-items:center; padding:0 4px;
+    margin-bottom:10px; flex:none;
+  }
+  .pill {
+    background:#fff; border-radius:22px; padding:6px 16px;
+    font-size:clamp(16px,4vw,20px); font-weight:bold;
+    box-shadow:0 3px 8px rgba(0,0,0,.12);
+  }
+  .round-text { color:#be123c; }
+  .stars-box { color:#b45309; }
+
+  .instruction {
+    font-size:clamp(13px,3.4vw,16px); color:#334155; font-weight:bold;
+    margin-bottom:14px; flex:none; line-height:1.5;
+    max-width:640px;
+  }
+
+  .scene-frame {
+    width:min(88vw,420px); aspect-ratio:4/3; border-radius:26px; overflow:hidden;
+    box-shadow:0 8px 20px rgba(0,0,0,.15); margin:0 auto 18px; flex:none;
+    border:4px solid #fff; background:#fff;
+  }
+  .scene-frame img {
+    width:100%; height:100%; object-fit:contain; display:block;
+    -webkit-user-drag:none; pointer-events:none;
+  }
+
+  .slots-row {
+    display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+    width:100%; max-width:640px; margin:0 auto 22px; flex:none;
+  }
+  .slot {
+    min-width:70px; height:54px; border-radius:14px;
+    border:3px dashed #cbd5e1; background:#f8fafc;
+    display:flex; align-items:center; justify-content:center;
+    padding:0 10px; transition:border-color .15s, background .15s;
+    font-weight:bold; font-size:clamp(15px,4vw,19px); color:#1e293b;
+  }
+  .slot.correct { border-style:solid; border-color:#4ade80; background:#f0fdf4; }
+  .slot.wrong { border-style:solid; border-color:#f87171; background:#fef2f2; }
+
+  .word-bank {
+    display:flex; flex-wrap:wrap; gap:12px; justify-content:center;
+    width:100%; max-width:680px; margin:0 auto 16px; flex:none;
+    min-height:56px;
+  }
+  .word-chip {
+    background:linear-gradient(180deg,#c4b5fd,#8b5cf6); color:#fff;
+    font-weight:bold; font-size:clamp(15px,4vw,19px);
+    padding:10px 18px; border-radius:16px;
+    box-shadow:0 3px 6px rgba(0,0,0,.25); border:2px solid #fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:grab; touch-action:none; white-space:nowrap;
+  }
+  .word-chip.dragging { cursor:grabbing; box-shadow:0 10px 20px rgba(0,0,0,.3); opacity:.95; z-index:999; }
+  .slot .word-chip { position:static; }
+
+  #checkBtn {
+    font-size:clamp(18px,4.6vw,22px); padding:14px 40px;
+    background:linear-gradient(180deg,#86efac,#22c55e); color:#052e16;
+    margin-bottom:10px;
+  }
+
+  .feedback {
+    min-height:44px; font-size:clamp(15px,4vw,19px); font-weight:bold; flex:none;
+    line-height:1.5; padding:0 8px;
+  }
+  .feedback.good { color:#15803d; }
+  .feedback.info { color:#be123c; }
+
+  #endScreen h1 { font-size:clamp(26px,6vw,36px); color:#b45309; text-shadow:2px 2px 0 #fff; }
+  #endScreen .trophy { font-size:clamp(56px,15vw,84px); animation:bounce 1.6s infinite; }
+  #finalStars { font-size:clamp(19px,4.8vw,25px); color:#1e293b; margin:10px 0 14px; font-weight:bold; }
+  #againBtn { font-size:clamp(19px,4.8vw,24px); padding:14px 40px; background:linear-gradient(180deg,#a78bfa,#8b5cf6); color:#fff; margin-top:14px; }
+
+  .board {
+    background:#fff; border-radius:22px; padding:14px 18px;
+    width:min(92vw,400px); box-shadow:0 8px 20px rgba(0,0,0,.15);
+    max-height:34vh; overflow-y:auto;
+  }
+  .board h2 { font-size:clamp(17px,4.2vw,21px); color:#7c2d12; margin-bottom:8px; }
+  .board table { width:100%; border-collapse:collapse; }
+  .board td, .board th {
+    padding:6px 4px; font-size:clamp(14px,3.8vw,18px); color:#334155;
+    border-bottom:1px solid #f1f5f9; text-align:center;
+  }
+  .board th { color:#94a3b8; font-size:clamp(12px,3.2vw,14px); }
+  .board tr.me { background:#fef9c3; font-weight:bold; }
+  .board .rank1 td { color:#b45309; font-weight:bold; }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="home-btn">🏠 หน้าหลัก</a>
+
+<!-- หน้าใส่ชื่อ -->
+<div class="screen active" id="nameScreen">
+  <div class="mascot">📝</div>
+  <h1 class="title">เกมเรียงประโยค</h1>
+  <p class="subtitle">ดูภาพแล้วลากคำมาเรียงให้เป็นประโยคที่ถูกต้อง<br>ระวังคำหลอกด้วยนะ! ตอบครบ 5 ข้อ รับดาวสะสม ⭐</p>
+  <input id="nameInput" type="text" maxlength="15" placeholder="พิมพ์ชื่อของหนู..." autocomplete="off">
+  <button class="big-btn primary-btn" id="startBtn">▶ เริ่มเล่น</button>
+</div>
+
+<!-- หน้าเล่นเกม -->
+<div class="screen" id="gameScreen">
+  <div class="topbar">
+    <div class="pill round-text" id="roundText">ข้อ 1/5</div>
+    <div class="pill stars-box">⭐ <span id="starCount">0</span></div>
+  </div>
+  <div class="instruction">👉 ดูภาพ แล้วลากคำด้านล่างมาเรียงในช่องให้เป็นประโยคที่ตรงกับภาพ (มีคำหลอกปนอยู่ด้วยนะ)</div>
+
+  <div class="scene-frame" id="sceneFrame"></div>
+
+  <div class="slots-row" id="slotsRow"></div>
+
+  <div class="word-bank" id="wordBank"></div>
+
+  <button class="big-btn" id="checkBtn" disabled>✅ ตรวจคำตอบ</button>
+  <div class="feedback" id="feedback"></div>
+</div>
+
+<!-- หน้าจบเกม -->
+<div class="screen" id="endScreen">
+  <div class="trophy">🏆</div>
+  <h1>เก่งมาก!</h1>
+  <div id="finalStars"></div>
+  <div class="board">
+    <h2>🏅 คะแนนสูงสุด</h2>
+    <table>
+      <thead><tr><th>ที่</th><th>ชื่อ</th><th>ดาว</th></tr></thead>
+      <tbody id="boardBody"></tbody>
+    </table>
+  </div>
+  <button class="big-btn" id="againBtn">🔄 เล่นอีกครั้ง</button>
+</div>
+
+<script>
+// ================== ชุดโจทย์ (5 ข้อ คงที่ สุ่มลำดับตอนเริ่มเล่น) ==================
+// scene = ชื่อไฟล์รูปใน images/ (เช่น scene:"swim" -> images/swim.png)
+const QUESTIONS = [
+  { scene:"swim",   answer:["ฉัน","กำลัง","ว่ายน้ำ"] },
+  { scene:"trash",  answer:["ฉัน","กำลัง","ทิ้งขยะ","ลงถังขยะ"] },
+  { scene:"toys",   answer:["ฉัน","กำลังเล่น","ของเล่น","กับเพื่อนๆ"] },
+  { scene:"market", answer:["ฉัน","กำลังไป","ตลาด","กับคุณแม่"] },
+  { scene:"sea",    answer:["ฉัน","กำลังเล่น","น้ำทะเล","กับครอบครัว"] },
+];
+const TOTAL_ROUNDS = QUESTIONS.length;
+const TOTAL_STARS = QUESTIONS.reduce((s,q)=>s+q.answer.length, 0);
+
+// คำหลอก — หยิบมาจากคำตอบของ "ข้ออื่น" ในชุดโจทย์เดียวกัน (ไม่ต้องมีคลังคำแยกต่างหาก)
+// สุ่ม 1-2 คำต่อข้อ ไม่ซ้ำกับคำตอบของข้อนั้นเอง
+const ALL_ANSWER_WORDS = [...new Set(QUESTIONS.flatMap(q => q.answer))];
+const LB_KEY = "sentence_game_p1_scores";
+
+let questionOrder = [], roundIdx = 0, stars = 0, playerName = "";
+let checkedRound = false;
+
+const $ = id => document.getElementById(id);
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// ================== เริ่มเกม ==================
+function startGame(){
+  questionOrder = shuffle([...QUESTIONS]);
+  roundIdx = 0; stars = 0;
+  $("starCount").textContent = 0;
+  showScreen("gameScreen");
+  loadRound();
+}
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+}
+
+function loadRound(){
+  roundIdx++;
+  checkedRound = false;
+  $("roundText").textContent = `ข้อ ${roundIdx}/${TOTAL_ROUNDS}`;
+  setFeedback("", "");
+
+  const q = questionOrder[roundIdx - 1];
+  $("sceneFrame").innerHTML = `<img src="images/${q.scene}.png" alt="">`;
+
+  // ช่องคำตอบ (จำนวนช่อง = จำนวนคำในประโยคที่ถูกต้องของข้อนั้น)
+  const slotsRow = $("slotsRow");
+  slotsRow.innerHTML = "";
+  q.answer.forEach(() => {
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slotsRow.appendChild(slot);
+  });
+  // เก็บคำที่ถูกต้องตามตำแหน่งไว้ตรวจทีหลัง (ไม่ผูกกับช่องใดช่องหนึ่งโดยตรง เพราะเด็กเลือกช่องเองได้)
+  slotsRow.dataset.expected = JSON.stringify(q.answer);
+
+  // คำในคลังคำ (คำตอบ + คำหลอก 1-2 คำจากข้ออื่น สุ่มลำดับ)
+  const decoyCount = 1 + Math.floor(Math.random() * 2); // สุ่ม 1 หรือ 2
+  const decoyCandidates = ALL_ANSWER_WORDS.filter(w => !q.answer.includes(w));
+  const decoys = shuffle(decoyCandidates).slice(0, decoyCount);
+  const allWords = shuffle([...q.answer, ...decoys]);
+  const bank = $("wordBank");
+  bank.innerHTML = "";
+  allWords.forEach(w => {
+    const chip = document.createElement("div");
+    chip.className = "word-chip";
+    chip.textContent = w;
+    chip.dataset.word = w;
+    attachDrag(chip);
+    bank.appendChild(chip);
+  });
+
+  const btn = $("checkBtn");
+  btn.disabled = true;
+  btn.classList.remove("done");
+  updateCheckBtn();
+}
+
+function setFeedback(msg, cls){
+  const f = $("feedback");
+  f.textContent = msg; f.className = "feedback " + (cls || "");
+}
+
+function updateCheckBtn(){
+  const total = document.querySelectorAll(".slot").length;
+  const filled = document.querySelectorAll(".slot .word-chip").length;
+  $("checkBtn").disabled = checkedRound || (filled < total);
+}
+
+// ================== เลื่อนจออัตโนมัติขณะลาก (สำหรับมือถือ ที่ลากออกนอกจอไม่ได้) ==================
+let autoScrollRAF = null;
+let dragPointerY = null;
+const AUTOSCROLL_EDGE = 70;
+const AUTOSCROLL_SPEED = 12;
+
+function autoScrollStep(){
+  if (dragPointerY == null){ autoScrollRAF = null; return; }
+  const scrollEl = document.getElementById("gameScreen");
+  const vh = window.innerHeight;
+  let dy = 0;
+  if (dragPointerY < AUTOSCROLL_EDGE){
+    dy = -AUTOSCROLL_SPEED * (1 - dragPointerY / AUTOSCROLL_EDGE);
+  } else if (dragPointerY > vh - AUTOSCROLL_EDGE){
+    dy = AUTOSCROLL_SPEED * (1 - (vh - dragPointerY) / AUTOSCROLL_EDGE);
+  }
+  if (dy !== 0 && scrollEl) scrollEl.scrollTop += dy;
+  autoScrollRAF = requestAnimationFrame(autoScrollStep);
+}
+function startAutoScroll(){
+  if (!autoScrollRAF) autoScrollRAF = requestAnimationFrame(autoScrollStep);
+}
+function stopAutoScroll(){
+  dragPointerY = null;
+  if (autoScrollRAF){ cancelAnimationFrame(autoScrollRAF); autoScrollRAF = null; }
+}
+
+// ================== ระบบลาก-วาง (Pointer Events รองรับทั้งเมาส์และทัช) ==================
+// คำเริ่มอยู่ในคลังคำด้านล่าง ลากไปวางในช่องคำตอบได้ทุกช่อง (เด็กเลือกลำดับเอง)
+// ถ้าวางทับคำที่มีอยู่แล้ว คำเดิมจะถูกเด้งกลับไปที่คลังคำ
+function attachDrag(chip){
+  chip.addEventListener("pointerdown", ev => {
+    if (checkedRound) return;
+    ev.preventDefault();
+    const rect = chip.getBoundingClientRect();
+    const offX = ev.clientX - rect.left, offY = ev.clientY - rect.top;
+
+    document.body.appendChild(chip);
+    chip.style.position = "fixed";
+    chip.style.left = rect.left + "px";
+    chip.style.top = rect.top + "px";
+    chip.classList.add("dragging");
+    chip.setPointerCapture(ev.pointerId);
+
+    function move(e){
+      chip.style.left = (e.clientX - offX) + "px";
+      chip.style.top = (e.clientY - offY) + "px";
+      dragPointerY = e.clientY;
+      startAutoScroll();
+    }
+    function up(e){
+      chip.removeEventListener("pointermove", move);
+      chip.removeEventListener("pointerup", up);
+      stopAutoScroll();
+      chip.classList.remove("dragging");
+      chip.style.visibility = "hidden";
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      chip.style.visibility = "visible";
+      chip.style.position = ""; chip.style.left = ""; chip.style.top = "";
+
+      const slot = under ? under.closest(".slot") : null;
+
+      if (slot){
+        const existing = slot.querySelector(".word-chip");
+        if (existing && existing !== chip){
+          $("wordBank").appendChild(existing);
+        }
+        slot.appendChild(chip);
+      } else {
+        $("wordBank").appendChild(chip);
+      }
+      updateCheckBtn();
+    }
+    chip.addEventListener("pointermove", move);
+    chip.addEventListener("pointerup", up);
+  });
+}
+
+// ================== ตรวจคำตอบ (ตรวจตามลำดับตำแหน่งของช่อง ซ้ายไปขวา) ==================
+function checkAnswers(){
+  if (checkedRound) return;
+  checkedRound = true;
+
+  const q = questionOrder[roundIdx - 1];
+  const slotEls = Array.from(document.querySelectorAll(".slot"));
+  let correctCount = 0;
+
+  slotEls.forEach((slot, i) => {
+    const chip = slot.querySelector(".word-chip");
+    const expected = q.answer[i];
+    if (chip && chip.dataset.word === expected){
+      slot.classList.add("correct");
+      correctCount++;
+    } else {
+      slot.classList.add("wrong");
+    }
+  });
+
+  stars += correctCount;
+  $("starCount").textContent = stars;
+  playTone(correctCount === q.answer.length);
+
+  if (correctCount === q.answer.length){
+    setFeedback("ถูกต้องหมดเลย! 🎉", "good");
+  } else {
+    setFeedback(`ถูก ${correctCount}/${q.answer.length} คำ ประโยคที่ถูกคือ "${q.answer.join("")}"`, "info");
+  }
+
+  $("checkBtn").disabled = true;
+  $("checkBtn").classList.add("done");
+
+  setTimeout(() => {
+    if (roundIdx < TOTAL_ROUNDS) loadRound();
+    else endGame();
+  }, 2600);
+}
+
+// ================== เอฟเฟกต์เสียง ==================
+let audioCtx = null;
+function playTone(good){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const notes = good ? [523,659,784] : [330,262];
+    notes.forEach((f,i)=>{
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = f; o.type = "sine";
+      const t = audioCtx.currentTime + i*0.12;
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+      o.start(t); o.stop(t+0.3);
+    });
+  }catch(e){}
+}
+
+// ================== Leaderboard ==================
+function loadScores(){
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveScore(name, score){
+  const scores = loadScores();
+  const entry = { name, score, ts: Date.now() };
+  scores.push(entry);
+  scores.sort((a,b)=> b.score - a.score || a.ts - b.ts);
+  localStorage.setItem(LB_KEY, JSON.stringify(scores.slice(0,20)));
+  return entry;
+}
+function renderBoard(myEntry){
+  const scores = loadScores().slice(0,10);
+  const tbody = $("boardBody");
+  tbody.innerHTML = "";
+  if (scores.length === 0){
+    tbody.innerHTML = "<tr><td colspan='3'>ยังไม่มีคะแนน</td></tr>";
+    return;
+  }
+  scores.forEach((s,i)=>{
+    const tr = document.createElement("tr");
+    if (i===0) tr.className = "rank1";
+    if (myEntry && s.ts === myEntry.ts && s.name === myEntry.name) tr.classList.add("me");
+    const medal = ["🥇","🥈","🥉"][i] || (i+1);
+    tr.innerHTML = `<td>${medal}</td><td>${escapeHtml(s.name)}</td><td>⭐ ${s.score}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function escapeHtml(s){ const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// ================== จบเกม ==================
+function endGame(){
+  $("finalStars").textContent = `${playerName} ได้ ⭐ ${stars} จาก ${TOTAL_STARS} ดวง`;
+  const entry = saveScore(playerName, stars);
+  renderBoard(entry);
+  showScreen("endScreen");
+}
+
+// ================== Events ==================
+$("startBtn").onclick = () => {
+  const name = $("nameInput").value.trim();
+  if (!name){
+    $("nameInput").placeholder = "ใส่ชื่อก่อนนะ 😊";
+    $("nameInput").focus();
+    return;
+  }
+  playerName = name;
+  playTone(true);
+  startGame();
+};
+$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("startBtn").click(); });
+$("checkBtn").onclick = checkAnswers;
+$("againBtn").onclick = () => {
+  $("nameInput").value = "";
+  showScreen("nameScreen");
+  $("nameInput").focus();
+};
+</script>
+</body>
+</html>
