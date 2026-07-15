@@ -164,7 +164,7 @@
 <div class="screen active" id="nameScreen">
   <div class="mascot">📝</div>
   <h1 class="title">เกมเรียงประโยค</h1>
-  <p class="subtitle">ดูภาพแล้วลากคำมาเรียงให้เป็นประโยคที่ถูกต้อง<br>ระวังคำหลอกด้วยนะ! ตอบครบ 5 ข้อ รับดาวสะสม ⭐</p>
+  <p class="subtitle">ดูภาพแล้วลากคำมาเรียงให้เป็นประโยคที่ถูกต้อง<br>ตอบครบ 5 ข้อ รับดาวสะสม ⭐</p>
   <input id="nameInput" type="text" maxlength="15" placeholder="พิมพ์ชื่อของหนู..." autocomplete="off">
   <button class="big-btn primary-btn" id="startBtn">▶ เริ่มเล่น</button>
 </div>
@@ -175,7 +175,7 @@
     <div class="pill round-text" id="roundText">ข้อ 1/5</div>
     <div class="pill stars-box">⭐ <span id="starCount">0</span></div>
   </div>
-  <div class="instruction">👉 ดูภาพ แล้วลากคำด้านล่างมาเรียงในช่องให้เป็นประโยคที่ตรงกับภาพ (มีคำหลอกปนอยู่ด้วยนะ)</div>
+  <div class="instruction">👉 ดูภาพ แล้วลากคำด้านล่างมาเรียงในช่องให้เป็นประโยคที่ตรงกับภาพ</div>
 
   <div class="scene-frame" id="sceneFrame"></div>
 
@@ -215,9 +215,6 @@ const QUESTIONS = [
 const TOTAL_ROUNDS = QUESTIONS.length;
 const TOTAL_STARS = QUESTIONS.reduce((s,q)=>s+q.answer.length, 0);
 
-// คำหลอก — หยิบมาจากคำตอบของ "ข้ออื่น" ในชุดโจทย์เดียวกัน (ไม่ต้องมีคลังคำแยกต่างหาก)
-// สุ่ม 1-2 คำต่อข้อ ไม่ซ้ำกับคำตอบของข้อนั้นเอง
-const ALL_ANSWER_WORDS = [...new Set(QUESTIONS.flatMap(q => q.answer))];
 const LB_KEY = "sentence_game_p1_scores";
 
 let questionOrder = [], roundIdx = 0, stars = 0, playerName = "";
@@ -260,11 +257,8 @@ function loadRound(){
   // เก็บคำที่ถูกต้องตามตำแหน่งไว้ตรวจทีหลัง (ไม่ผูกกับช่องใดช่องหนึ่งโดยตรง เพราะเด็กเลือกช่องเองได้)
   slotsRow.dataset.expected = JSON.stringify(q.answer);
 
-  // คำในคลังคำ (คำตอบ + คำหลอก 1-2 คำจากข้ออื่น สุ่มลำดับ)
-  const decoyCount = 1 + Math.floor(Math.random() * 2); // สุ่ม 1 หรือ 2
-  const decoyCandidates = ALL_ANSWER_WORDS.filter(w => !q.answer.includes(w));
-  const decoys = shuffle(decoyCandidates).slice(0, decoyCount);
-  const allWords = shuffle([...q.answer, ...decoys]);
+  // คำในคลังคำ (เฉพาะคำตอบที่ถูกต้อง ไม่มีคำหลอก สุ่มลำดับ)
+  const allWords = shuffle([...q.answer]);
   const bank = $("wordBank");
   bank.innerHTML = "";
   allWords.forEach(w => {

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>เกมอ่านคล่อง ป.1 📖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family:'Sarabun','Prompt','Segoe UI',Tahoma,sans-serif;
+    background: linear-gradient(160deg,#a8e6ff 0%,#d8f7c9 50%,#fff3b0 100%);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden; user-select:none; -webkit-user-select:none;
+  }
+  .screen {
+    width:100%; max-width:520px; height:100%; max-height:820px;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    padding:54px 16px 16px; text-align:center; position:relative;
+    overflow-y:auto;
+  }
+  .screen.active { display:flex; }
+  #gameScreen { justify-content:flex-start; }
+
+  .big-btn {
+    border:none; border-radius:32px; cursor:pointer;
+    font-family:inherit; font-weight:bold;
+    box-shadow:0 6px 0 rgba(0,0,0,.18);
+    transition:transform .1s, box-shadow .1s;
+    touch-action:manipulation;
+  }
+  .big-btn:active { transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.18); }
+  .big-btn:disabled { opacity:.45; cursor:default; box-shadow:0 6px 0 rgba(0,0,0,.1); }
+  .big-btn:disabled:active { transform:none; }
+
+  /* ---------- หน้าเริ่ม / ใส่ชื่อ ---------- */
+  h1.title { font-size:clamp(30px,7vw,44px); color:#2d6a4f; margin-bottom:8px; text-shadow:2px 2px 0 #fff; }
+  .mascot { font-size:clamp(70px,20vw,110px); animation:bounce 1.6s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
+  .subtitle { font-size:clamp(17px,4vw,21px); color:#40513b; margin:14px 0 26px; line-height:1.6; }
+  .primary-btn {
+    font-size:clamp(24px,6vw,32px); padding:20px 60px;
+    background:linear-gradient(180deg,#ffd93d,#ff9f1c); color:#7a3b00;
+  }
+  .warn {
+    margin-top:22px; font-size:15px; color:#9a3412; background:#fff7ed;
+    border:2px dashed #fdba74; border-radius:16px; padding:10px 14px; display:none;
+  }
+  #nameInput {
+    font-family:inherit; font-size:clamp(22px,5.5vw,28px); font-weight:bold;
+    text-align:center; color:#1e293b;
+    border:4px solid #60a5fa; border-radius:24px; outline:none;
+    padding:14px 18px; width:min(80vw,320px); margin:10px 0 24px;
+    background:#fff;
+  }
+  #nameInput:focus { border-color:#2563eb; }
+
+  /* ---------- ปุ่มกลับหน้าหลัก ---------- */
+  .home-btn {
+    position:fixed; top:12px; left:14px; z-index:100;
+    background:#fff; border-radius:20px; padding:8px 16px;
+    font-size:clamp(14px,3.6vw,17px); font-weight:bold; color:#0f766e;
+    box-shadow:0 3px 8px rgba(0,0,0,.15);
+    text-decoration:none; display:flex; align-items:center; gap:6px;
+  }
+  .home-btn:active { transform:translateY(2px); }
+
+  /* ---------- หน้าเกม ---------- */
+  .topbar {
+    width:100%; flex:none;
+    display:flex; justify-content:space-between; align-items:center; padding:0 4px;
+    margin-bottom:8px;
+  }
+  .stars-box {
+    background:#fff; border-radius:24px; padding:6px 16px;
+    font-size:clamp(19px,4.5vw,24px); font-weight:bold; color:#b45309;
+    box-shadow:0 3px 8px rgba(0,0,0,.12);
+  }
+  .progress-text {
+    background:#fff; border-radius:24px; padding:6px 16px;
+    font-size:clamp(16px,4vw,20px); font-weight:bold; color:#1d4ed8;
+    box-shadow:0 3px 8px rgba(0,0,0,.12);
+  }
+  .player-tag {
+    width:100%; flex:none; text-align:center; margin-bottom:8px;
+    font-size:clamp(15px,3.8vw,18px); font-weight:bold; color:#0f766e;
+  }
+  .progress-bar { width:100%; max-width:min(92vw,440px); flex:none; height:14px; background:#ffffffaa; border-radius:10px; overflow:hidden; margin-bottom:20px; }
+  .progress-fill { height:100%; width:0%; background:linear-gradient(90deg,#34d399,#10b981); border-radius:10px; transition:width .4s; }
+
+  /* ---------- กล่องประโยคเลื่อน (teleprompter) ---------- */
+  .lines-viewport {
+    width:100%; max-width:min(92vw,440px); height:230px; overflow:hidden;
+    background:#fff; border-radius:32px; box-shadow:0 6px 16px rgba(0,0,0,.12);
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    gap:10px; padding:18px 14px; margin-bottom:16px;
+  }
+  .line-row {
+    width:100%; text-align:center; line-height:1.35;
+    transition: opacity .45s ease, transform .45s ease, color .35s ease, font-size .35s ease;
+    opacity:1; transform:translateY(0);
+  }
+  .line-row.locked { color:#cbd5e1; font-size:clamp(15px,3.8vw,19px); font-weight:600; }
+  .line-row.active { color:#1e293b; font-size:clamp(28px,7.5vw,40px); font-weight:800; }
+  .line-row.done { opacity:0; transform:translateY(-36px); }
+  .line-row.incoming { opacity:0; transform:translateY(16px); }
+
+  .btn-row { display:flex; gap:14px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
+  #listenBtn { font-size:clamp(19px,4.5vw,24px); padding:14px 24px; background:#60a5fa; color:#fff; }
+  #micBtn {
+    font-size:clamp(22px,5.5vw,28px); padding:18px 34px;
+    background:linear-gradient(180deg,#f87171,#ef4444); color:#fff;
+  }
+  #micBtn.listening { animation:pulse 1s infinite; background:linear-gradient(180deg,#4ade80,#22c55e); }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+  #skipBtn { font-size:clamp(15px,3.8vw,18px); padding:10px 20px; background:#e2e8f0; color:#475569; margin-top:14px; }
+
+  .listening-indicator {
+    display:none; align-items:center; justify-content:center; gap:8px;
+    font-size:clamp(16px,4vw,20px); color:#16a34a; font-weight:bold; margin-top:10px;
+  }
+  .listening-indicator.show { display:flex; }
+  .listening-indicator .ear-icon { font-size:clamp(26px,6.5vw,34px); animation:earPulse 1s infinite; }
+  @keyframes earPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+
+  .mic-info { width:min(92vw,440px); margin-top:10px; }
+  .mic-level-box {
+    width:100%; height:16px; background:#e2e8f0; border-radius:10px;
+    overflow:hidden; box-shadow:inset 0 1px 4px rgba(0,0,0,.18);
+  }
+  .mic-level-fill {
+    height:100%; width:0%; border-radius:10px;
+    background:linear-gradient(90deg,#34d399,#facc15,#ef4444);
+    transition:width .07s linear;
+  }
+  .mic-device {
+    font-size:clamp(12px,3.2vw,14px); color:#64748b; margin-top:5px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .mic-dot { width:9px; height:9px; border-radius:50%; background:#cbd5e1; flex:none; }
+  .mic-dot.on { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.25); }
+
+  .feedback {
+    min-height:44px; margin-top:14px; font-size:clamp(18px,4.6vw,23px);
+    font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .feedback.good { color:#15803d; animation:pop .4s; }
+  .feedback.bad  { color:#b91c1c; animation:shake .4s; }
+  .feedback.info { color:#1d4ed8; }
+  @keyframes pop { 0%{transform:scale(.5)} 70%{transform:scale(1.15)} 100%{transform:scale(1)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+  .heard { font-size:clamp(14px,3.6vw,17px); color:#64748b; min-height:22px; }
+
+  .manual-row { display:none; gap:16px; margin-top:12px; }
+  .manual-row button { font-size:clamp(18px,4.5vw,22px); padding:12px 28px; }
+  #manualOk { background:#4ade80; color:#14532d; }
+  #manualNo { background:#fca5a5; color:#7f1d1d; }
+
+  /* ---------- หน้าจบ + Leaderboard ---------- */
+  #endScreen h1 { font-size:clamp(28px,6.5vw,40px); color:#b45309; text-shadow:2px 2px 0 #fff; }
+  #endScreen .trophy { font-size:clamp(60px,16vw,90px); animation:bounce 1.6s infinite; }
+  #finalStars { font-size:clamp(20px,5vw,26px); color:#1e293b; margin:10px 0 14px; font-weight:bold; }
+  #againBtn { font-size:clamp(20px,5vw,26px); padding:16px 44px; background:linear-gradient(180deg,#a78bfa,#8b5cf6); color:#fff; margin-top:16px; }
+
+  .board {
+    background:#fff; border-radius:24px; padding:14px 18px;
+    width:min(92vw,400px); box-shadow:0 8px 20px rgba(0,0,0,.15);
+    max-height:38vh; overflow-y:auto;
+  }
+  .board h2 { font-size:clamp(18px,4.5vw,22px); color:#7c2d12; margin-bottom:8px; }
+  .board table { width:100%; border-collapse:collapse; }
+  .board td, .board th {
+    padding:6px 4px; font-size:clamp(15px,4vw,19px); color:#334155;
+    border-bottom:1px solid #f1f5f9; text-align:center;
+  }
+  .board th { color:#94a3b8; font-size:clamp(13px,3.4vw,15px); }
+  .board tr.me { background:#fef9c3; font-weight:bold; border-radius:8px; }
+  .board .rank1 td { color:#b45309; font-weight:bold; }
+
+  .fly-star { position:fixed; font-size:44px; pointer-events:none; animation:fly 1s ease-out forwards; z-index:99; }
+  @keyframes fly { 0%{transform:translateY(0) scale(1); opacity:1} 100%{transform:translateY(-140px) scale(1.6); opacity:0} }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="home-btn">🏠 หน้าหลัก</a>
+
+<!-- หน้าใส่ชื่อ (หน้าแรก) -->
+<div class="screen active" id="nameScreen">
+  <div class="mascot">📖</div>
+  <h1 class="title">เกมอ่านคล่อง</h1>
+  <p class="subtitle">อ่านเรื่องสั้นทีละประโยค ป.1<br>ประโยคจะเลื่อนขึ้นเรื่อยๆ อ่านถูกรับดาวสะสม ⭐</p>
+  <input id="nameInput" type="text" maxlength="15" placeholder="พิมพ์ชื่อของหนู..." autocomplete="off">
+  <button class="big-btn primary-btn" id="startBtn">▶ เริ่มเล่น</button>
+  <div class="warn" id="warnBox">
+    ⚠️ เบราว์เซอร์นี้ไม่รองรับการฟังเสียง<br>
+    แนะนำ Chrome (PC/Android) หรือ Safari (iPhone/iPad)<br>
+    ยังเล่นได้โดยให้คุณครูกดปุ่ม ✓ / ✗ ตรวจเอง
+  </div>
+</div>
+
+<!-- หน้าเล่นเกม -->
+<div class="screen" id="gameScreen">
+  <div class="topbar">
+    <div class="progress-text" id="progressText">ประโยค 1/44</div>
+    <div class="stars-box">⭐ <span id="starCount">0</span></div>
+  </div>
+  <div class="player-tag" id="playerTag">👧 น้อง...</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="lines-viewport" id="linesViewport"></div>
+
+  <div class="btn-row">
+    <button class="big-btn" id="listenBtn">🔊 ฟังตัวอย่าง</button>
+    <button class="big-btn" id="micBtn">🎤 พูดเลย!</button>
+  </div>
+
+  <div class="manual-row" id="manualRow">
+    <button class="big-btn" id="manualOk">✓ อ่านถูก</button>
+    <button class="big-btn" id="manualNo">✗ ยังไม่ถูก</button>
+  </div>
+
+  <div class="listening-indicator" id="listeningIndicator"><span class="ear-icon">👂</span> กำลังฟังอยู่...</div>
+  <div class="feedback" id="feedback"></div>
+  <div class="heard" id="heardText"></div>
+
+  <div class="mic-info" id="micInfo">
+    <div class="mic-level-box"><div class="mic-level-fill" id="micLevelFill"></div></div>
+    <div class="mic-device" id="micDeviceText"><span class="mic-dot" id="micDot"></span><span id="micDeviceLabel">ยังไม่ได้เปิดไมค์</span></div>
+  </div>
+
+  <button class="big-btn" id="skipBtn">ข้ามประโยคนี้ ⏭</button>
+</div>
+
+<!-- หน้าจบเกม + Leaderboard -->
+<div class="screen" id="endScreen">
+  <div class="trophy">🏆</div>
+  <h1>เก่งมาก!</h1>
+  <div id="finalStars"></div>
+  <div class="board">
+    <h2>🏅 คะแนนสูงสุด</h2>
+    <table>
+      <thead><tr><th>ที่</th><th>ชื่อ</th><th>ดาว</th></tr></thead>
+      <tbody id="boardBody"></tbody>
+    </table>
+  </div>
+  <button class="big-btn" id="againBtn">🔄 เล่นอีกครั้ง</button>
+</div>
+
+<script>
+// ================== เนื้อเรื่องสำหรับอ่านคล่อง (เรียงลำดับตามเรื่อง ห้ามสลับ) ==================
+const LINES = [
+  "ในวันหยุด","พี่พาฉัน","ไปตลาด","ที่มีผู้คน","หญิงชาย","มากันมากมาย",
+  "เพื่อเลือก","ซื้อสิ่งของ","พวกของกิน","ของใช้","บ้างก็ต้องการ","เนื้อสัตว์",
+  "ผักผลไม้","คุณแม่","สั่งซื้อ","องุ่น","แตงโม","กล้วย","ส้ม","ผักต่างๆ",
+  "รวมทั้ง","กุ้งหอย","ปูปลา","ผักคะน้า","ผักกาดขาว","คุณพ่อ","อยากได้","รองเท้า",
+  "ไว้ใส่","สำหรับ","ออกกำลังกาย","ก่อนกลับ","เราทั้งคู่","กินขนมปัง","ร้านประจำ",
+  "เมื่อถึงบ้าน","ทุกคน","ช่วยกัน","ทำอาหาร","เสร็จแล้ว","รับประทาน","ด้วยกัน",
+  "อย่าง","มีความสุข"
+];
+const TOTAL_LINES = LINES.length;
+const LOOKAHEAD = 3; // จำนวนประโยคที่ยังไม่ปลดล็อกที่โชว์ล่วงหน้า (สีเทา)
+
+const PRAISE  = ["เก่งมาก! 🎉","ยอดเยี่ยม! 👏","สุดยอดเลย! 🌟","อ่านถูกต้อง! 💯","เยี่ยมไปเลย! 🥳"];
+const TRY_AGAIN = ["ลองอีกครั้งนะ 💪","เกือบถูกแล้ว ลองใหม่! 😊","สู้ๆ ลองพูดอีกที 🌈"];
+const LB_KEY = "fluency_game_p1_scores";
+
+// ================== ตัวแปรเกม ==================
+let lineIdx = 0, stars = 0, tries = 0;
+let playerName = "";
+let recognizing = false, recognition = null;
+let micReady = false;
+
+const $ = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const hasSR = !!SR;
+// Chrome (ทั้งบนมือถือและพีซี): ถ้ามีสตรีมไมค์ (getUserMedia) ค้างไว้พร้อมกับ SpeechRecognition กำลังทำงาน
+// เอนจิน speech ของ Chrome จะแย่งไมค์กันเองจนจับคำพูดไม่ได้เลย (แม้หลอดระดับเสียงจะขึ้นก็ตาม)
+// ทดสอบแล้วพบว่าเกิดเฉพาะ Chrome เท่านั้น — Edge (เอนจิน speech คนละตัว) และ iOS Safari ไม่มีปัญหานี้
+const ua = navigator.userAgent;
+const isChrome = /Chrome/.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
+
+// ================== เสียงพูดตัวอย่าง (TTS) ==================
+function speak(text, cb){
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "th-TH"; u.rate = 0.8;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith("th"));
+    if (v) u.voice = v;
+    if (cb) u.onend = cb;
+    speechSynthesis.speak(u);
+  }catch(e){ if(cb) cb(); }
+}
+if ('speechSynthesis' in window) speechSynthesis.getVoices();
+
+// ================== ขออนุญาตไมค์ล่วงหน้า (แก้บั๊ก popup ตัดจังหวะ) ==================
+let micStream = null, audioCtx = null, analyser = null, micDataArray = null, micRafId = null;
+
+async function ensureMic(){
+  if (micReady) return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true; // ให้ SR จัดการเอง
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    micStream = stream;
+    micReady = true;
+    setupMicMonitor(stream);
+    return true;
+  } catch(e){
+    return false;
+  }
+}
+
+// ---------- แสดงระดับเสียงไมค์ + ชื่ออุปกรณ์ที่กำลังใช้งาน ----------
+function setupMicMonitor(stream){
+  try {
+    if (micRafId){ cancelAnimationFrame(micRafId); micRafId = null; }
+    analyser = null;
+    const track = stream.getAudioTracks()[0];
+    updateDeviceLabel(track);
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.55;
+    source.connect(analyser); // ไม่ต่อไป destination กันเสียงสะท้อน
+    micDataArray = new Uint8Array(analyser.fftSize);
+    $("micDot").classList.add("on");
+    startVisualizer();
+  } catch(e){}
+}
+
+async function updateDeviceLabel(track){
+  let label = track && track.label;
+  if (!label && navigator.mediaDevices.enumerateDevices){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const settings = (track && track.getSettings) ? track.getSettings() : {};
+      const match = devices.find(d => d.kind === "audioinput" && d.deviceId === settings.deviceId);
+      if (match) label = match.label;
+    }catch(e){}
+  }
+  $("micDeviceLabel").textContent = label || "ไมโครโฟนพร้อมใช้งาน";
+}
+
+// ปล่อยสตรีมไมค์ของหลอดระดับเสียงทิ้งชั่วคราว (เฉพาะ Chrome) ก่อนเริ่ม SpeechRecognition
+function releaseMicMonitor(){
+  if (micRafId){ cancelAnimationFrame(micRafId); micRafId = null; }
+  analyser = null;
+  if (micStream){
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+  micReady = false;
+  const dot = $("micDot");
+  if (dot) dot.classList.remove("on");
+}
+
+// ---------- แถบระดับเสียงจำลอง ระหว่างที่ Chrome กำลังฟัง (ของจริงถูกปล่อยไปแล้วกันไมค์ชนกัน) ----------
+let fakePulseRAF = null;
+function startFakePulse(){
+  stopFakePulse();
+  const fill = $("micLevelFill");
+  if (!fill) return;
+  const dot = $("micDot");
+  if (dot) dot.classList.add("on");
+  const start = Date.now();
+  function tick(){
+    const t = (Date.now() - start) / 1000;
+    const pct = 30 + Math.sin(t*6)*22 + Math.sin(t*13.7)*10;
+    fill.style.width = Math.max(6, Math.min(92, pct)) + "%";
+    fakePulseRAF = requestAnimationFrame(tick);
+  }
+  fakePulseRAF = requestAnimationFrame(tick);
+}
+function stopFakePulse(){
+  if (fakePulseRAF){ cancelAnimationFrame(fakePulseRAF); fakePulseRAF = null; }
+}
+
+function startVisualizer(){
+  if (micRafId) return;
+  const fill = $("micLevelFill");
+  function tick(){
+    if (!analyser){ micRafId = null; return; }
+    analyser.getByteTimeDomainData(micDataArray);
+    let sum = 0;
+    for (let i=0;i<micDataArray.length;i++){
+      const v = (micDataArray[i]-128)/128;
+      sum += v*v;
+    }
+    const rms = Math.sqrt(sum/micDataArray.length);
+    const pct = Math.min(100, Math.round(rms*350)); // ขยายสเกลให้เห็นชัด
+    fill.style.width = pct + "%";
+    micRafId = requestAnimationFrame(tick);
+  }
+  micRafId = requestAnimationFrame(tick);
+}
+
+// ================== เริ่มเกม ==================
+function startGame(){
+  lineIdx = 0; stars = 0; tries = 0;
+  $("starCount").textContent = 0;
+  $("playerTag").textContent = "👧 " + playerName;
+  showScreen("gameScreen");
+  renderInitialViewport();
+  loadLineUI();
+}
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+}
+
+function makeLineRow(idx, state){
+  const row = document.createElement("div");
+  row.className = "line-row " + state;
+  row.dataset.idx = idx;
+  row.textContent = LINES[idx];
+  return row;
+}
+
+function renderInitialViewport(){
+  const vp = $("linesViewport");
+  vp.innerHTML = "";
+  vp.appendChild(makeLineRow(lineIdx, "active"));
+  for (let i = 1; i <= LOOKAHEAD; i++){
+    if (lineIdx + i < TOTAL_LINES) vp.appendChild(makeLineRow(lineIdx + i, "locked"));
+  }
+}
+
+function updateProgress(){
+  $("progressText").textContent = `ประโยค ${lineIdx+1}/${TOTAL_LINES}`;
+  $("progressFill").style.width = (lineIdx/TOTAL_LINES*100) + "%";
+}
+
+function currentLineText(){ return LINES[lineIdx]; }
+
+function loadLineUI(){
+  tries = 0;
+  updateProgress();
+  setFeedback("", "");
+  $("heardText").textContent = "";
+  $("micBtn").disabled = false;
+}
+
+function setFeedback(msg, cls){
+  const f = $("feedback");
+  f.textContent = msg; f.className = "feedback " + cls;
+}
+
+// ================== ตรวจคำตอบ ==================
+function normalize(s){ return (s||"").replace(/[\s​]/g,"").toLowerCase(); }
+
+function isCorrect(transcripts){
+  const target = normalize(currentLineText());
+  return transcripts.some(t => {
+    const n = normalize(t);
+    return n === target || n.includes(target);
+  });
+}
+
+function stopListening(){
+  try{ if (recognition) recognition.stop(); }catch(e){}
+}
+
+// เลื่อนประโยคที่อ่านจบแล้วขึ้น+จางหาย แล้วปลดล็อกประโยคถัดไปขึ้นมาแทน
+function advanceLine(){
+  const vp = $("linesViewport");
+  const activeRow = vp.querySelector(`.line-row[data-idx="${lineIdx}"]`);
+  if (activeRow){
+    activeRow.classList.remove("active");
+    activeRow.classList.add("done");
+    setTimeout(()=>{ if (activeRow.parentNode) activeRow.remove(); }, 480);
+  }
+
+  lineIdx++;
+
+  if (lineIdx >= TOTAL_LINES){
+    setTimeout(endGame, 500);
+    return;
+  }
+
+  setTimeout(()=>{
+    const nextRow = vp.querySelector(`.line-row[data-idx="${lineIdx}"]`);
+    if (nextRow){
+      nextRow.classList.remove("locked");
+      nextRow.classList.add("active");
+    }
+    const newIdx = lineIdx + LOOKAHEAD;
+    if (newIdx < TOTAL_LINES){
+      const row = makeLineRow(newIdx, "locked incoming");
+      vp.appendChild(row);
+      requestAnimationFrame(()=> requestAnimationFrame(()=>{ row.classList.remove("incoming"); }));
+    }
+    loadLineUI();
+  }, 220);
+}
+
+function correct(){
+  stars++; tries = 0;
+  $("starCount").textContent = stars;
+  setFeedback(PRAISE[Math.floor(Math.random()*PRAISE.length)], "good");
+  flyStar();
+  playTone(true);
+  stopListening();
+  $("micBtn").disabled = true;
+  setTimeout(()=> advanceLine(), 1000);
+}
+
+function wrong(heard){
+  tries++;
+  playTone(false);
+  if (heard) $("heardText").textContent = "ได้ยินว่า: “" + heard + "”";
+  if (tries >= 3){
+    stopListening();
+    setFeedback("ไม่เป็นไรนะ 😊 ประโยคนี้อ่านว่า...", "info");
+    $("micBtn").disabled = true;
+    speak(currentLineText(), ()=> setTimeout(()=> advanceLine(), 600));
+  } else {
+    setFeedback(TRY_AGAIN[Math.floor(Math.random()*TRY_AGAIN.length)], "bad");
+    // ใช้ recognition.continuous=true ทำให้ไมค์ยังฟังต่อเนื่องอัตโนมัติ ไม่ต้องกดปุ่มพูดใหม่
+  }
+}
+
+// ================== ฟังเสียงเด็ก (Speech Recognition) ==================
+async function onMicPress(){
+  if (recognizing) return;
+  const ok = await ensureMic();
+  if (!ok){
+    setFeedback("กรุณาอนุญาตใช้ไมโครโฟน 🎤", "info");
+    showManual();
+    return;
+  }
+  startListening(0);
+}
+
+const MAX_AUTO_RETRY = 2;      // จำนวนครั้งสูงสุดที่จะลองฟังใหม่เองอัตโนมัติ
+const FAST_ABORT_MS = 1500;    // ถ้าฟังจบเร็วกว่านี้ (เช่น glitch/popup ขัดจังหวะ) ถือว่าผิดปกติ ลองใหม่เองได้
+                                // แต่ถ้าฟังมาสักพักแล้วยังไม่ได้ยินเสียง (เด็กยังไม่พร้อมพูด) จะไม่รีบเริ่มใหม่เอง
+                                // ให้เด็กกดปุ่มไมค์เองตอนพร้อม กันไม่ให้เสียงเริ่ม/จบของระบบดังรัวๆ
+
+function startListening(retryCount){
+  retryCount = retryCount || 0;
+  if (!hasSR || recognizing) return;
+  if (isChrome){ releaseMicMonitor(); startFakePulse(); }
+  recognition = new SR();
+  recognition.lang = "th-TH";
+  recognition.interimResults = true;
+  recognition.continuous = true;
+  recognition.maxAlternatives = 5;
+  recognizing = true;
+  const startedAt = Date.now();
+  $("micBtn").classList.add("listening");
+  $("micBtn").textContent = "🎤 กำลังฟัง...";
+  setFeedback("พูดเลย! 🗣️", "info");
+  $("heardText").textContent = "";
+
+  recognition.onstart = () => { $("listeningIndicator").classList.add("show"); };
+
+  let gotResult = false;
+  recognition.onresult = ev => {
+    let finalRes = null, interimText = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++){
+      const res = ev.results[i];
+      if (res.isFinal) finalRes = res;
+      else interimText += res[0].transcript;
+    }
+    if (interimText) $("heardText").textContent = "🗯️ กำลังได้ยิน: " + interimText;
+    if (finalRes){
+      gotResult = true;
+      const alts = [];
+      for (let i=0; i<finalRes.length; i++) alts.push(finalRes[i].transcript);
+      if (isCorrect(alts)) { $("heardText").textContent = ""; correct(); }
+      else wrong(alts[0]);
+    }
+  };
+  recognition.onerror = ev => {
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed"){
+      gotResult = true;
+      setFeedback("กรุณาอนุญาตใช้ไมโครโฟน 🎤", "info");
+      showManual();
+    } else if (ev.error === "no-speech" || ev.error === "aborted"){
+      // ปล่อยให้ onend ตัดสินใจลองฟังใหม่เองอัตโนมัติ (ระบบพยายามแก้ปัญหาเอง)
+    } else {
+      gotResult = true;
+      setFeedback("ลองกดปุ่มไมค์อีกครั้งนะ", "info");
+    }
+  };
+  recognition.onend = () => {
+    recognizing = false;
+    if (!gotResult && retryCount < MAX_AUTO_RETRY && (Date.now() - startedAt) < FAST_ABORT_MS){
+      setTimeout(()=> startListening(retryCount+1), 400);
+      return;
+    }
+    if (isChrome){ stopFakePulse(); ensureMic(); }
+    $("listeningIndicator").classList.remove("show");
+    $("micBtn").classList.remove("listening");
+    $("micBtn").textContent = "🎤 พูดเลย!";
+    if (!gotResult) setFeedback("ไม่ได้ยินเสียง ลองกดปุ่มไมค์อีกครั้งนะ 🙉", "bad");
+  };
+  try { recognition.start(); }
+  catch(e){ recognizing = false; if (isChrome) stopFakePulse(); }
+}
+
+function showManual(){
+  $("manualRow").style.display = "flex";
+  $("micBtn").style.display = "none";
+}
+
+// ================== Leaderboard ==================
+function loadScores(){
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveScore(name, score){
+  const scores = loadScores();
+  const entry = { name, score, ts: Date.now() };
+  scores.push(entry);
+  scores.sort((a,b)=> b.score - a.score || a.ts - b.ts);
+  localStorage.setItem(LB_KEY, JSON.stringify(scores.slice(0,20)));
+  return entry;
+}
+function renderBoard(myEntry){
+  const scores = loadScores().slice(0,10);
+  const tbody = $("boardBody");
+  tbody.innerHTML = "";
+  if (scores.length === 0){
+    tbody.innerHTML = "<tr><td colspan='3'>ยังไม่มีคะแนน</td></tr>";
+    return;
+  }
+  scores.forEach((s,i)=>{
+    const tr = document.createElement("tr");
+    if (i===0) tr.className = "rank1";
+    if (myEntry && s.ts === myEntry.ts && s.name === myEntry.name) tr.classList.add("me");
+    const medal = ["🥇","🥈","🥉"][i] || (i+1);
+    tr.innerHTML = `<td>${medal}</td><td>${escapeHtml(s.name)}</td><td>⭐ ${s.score}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function escapeHtml(s){ const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// ================== เอฟเฟกต์ ==================
+function flyStar(){
+  for (let i=0;i<3;i++){
+    const s = document.createElement("div");
+    s.className = "fly-star"; s.textContent = "⭐";
+    s.style.left = (35 + Math.random()*30) + "%";
+    s.style.top  = "50%";
+    s.style.animationDelay = (i*0.12)+"s";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(), 1400);
+  }
+}
+
+function playTone(good){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const notes = good ? [523,659,784] : [330,262];
+    notes.forEach((f,i)=>{
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = f; o.type = "sine";
+      const t = audioCtx.currentTime + i*0.12;
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+      o.start(t); o.stop(t+0.3);
+    });
+  }catch(e){}
+}
+
+// ================== จบเกม ==================
+function endGame(){
+  $("progressFill").style.width = "100%";
+  $("finalStars").textContent = `${playerName} ได้ ⭐ ${stars} จาก ${TOTAL_LINES} ดวง`;
+  const entry = saveScore(playerName, stars);
+  renderBoard(entry);
+  showScreen("endScreen");
+  speak(stars >= TOTAL_LINES*0.7 ? "เก่งมากๆเลย" : "เก่งมาก ครั้งหน้าลองใหม่นะ");
+}
+
+// ================== Events ==================
+$("startBtn").onclick = async () => {
+  const name = $("nameInput").value.trim();
+  if (!name){
+    $("nameInput").placeholder = "ใส่ชื่อก่อนนะ 😊";
+    $("nameInput").focus();
+    return;
+  }
+  playerName = name;
+  playTone(true);           // ปลดล็อกเสียงบน iOS
+  speechSynthesis.cancel(); // ปลดล็อก TTS
+  if (hasSR) ensureMic();   // ขอสิทธิ์ไมค์ตั้งแต่ตอนเริ่ม จะได้ไม่มี popup ตัดจังหวะตอนพูด
+  else showManual();
+  startGame();
+};
+$("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") $("startBtn").click(); });
+$("listenBtn").onclick = () => speak(currentLineText());
+$("micBtn").onclick    = onMicPress;
+$("skipBtn").onclick   = () => { stopListening(); advanceLine(); };
+$("manualOk").onclick  = correct;
+$("manualNo").onclick  = () => wrong("");
+$("againBtn").onclick  = () => {
+  $("nameInput").value = "";
+  showScreen("nameScreen");
+  $("nameInput").focus();
+};
+
+if (!hasSR){ $("warnBox").style.display = "block"; }
+</script>
+</body>
+</html>
