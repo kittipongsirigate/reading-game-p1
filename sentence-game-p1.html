@@ -207,10 +207,10 @@
 // scene = ชื่อไฟล์รูปใน images/ (เช่น scene:"swim" -> images/swim.png)
 const QUESTIONS = [
   { scene:"swim",   answer:["ฉัน","กำลัง","ว่ายน้ำ"] },
-  { scene:"trash",  answer:["ฉัน","กำลัง","ทิ้งขยะ","ลงถังขยะ"] },
-  { scene:"toys",   answer:["ฉัน","กำลังเล่น","ของเล่น","กับเพื่อนๆ"] },
-  { scene:"market", answer:["ฉัน","กำลังไป","ตลาด","กับคุณแม่"] },
-  { scene:"sea",    answer:["ฉัน","กำลังเล่น","น้ำทะเล","กับครอบครัว"] },
+  { scene:"trash",  answer:["หนูและ","พ่อแม่","กำลัง","คัดแยกขยะ"] },
+  { scene:"toys",   answer:["ฉันและ","น้อง","กำลังเล่น","ของเล่น"] },
+  { scene:"market", answer:["ฉันกับแม่","ไป","ตลาด"] },
+  { scene:"sea",    answer:["ฉัน","เล่นน้ำ","กับครอบครัว"] },
 ];
 const TOTAL_ROUNDS = QUESTIONS.length;
 const TOTAL_STARS = QUESTIONS.reduce((s,q)=>s+q.answer.length, 0);
